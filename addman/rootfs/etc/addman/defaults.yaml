@@ -1,0 +1,12 @@
+---
+addons:
+  addman:
+    start: true
+    watchdog: true
+    auto_update: true
+    boot: auto
+    options:
+      check_interval: 600
+      config_file: /config/addman.yaml
+      log_level: info
+      watch_config_changes: true

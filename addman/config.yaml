@@ -3,7 +3,7 @@ name: AddMan
 version: 0.1.0
 slug: addman
 description: AddMan installs and configures add-ons.
-url: https://github.com/dadav/hass-addon-addman
+url: https://github.com/dadav/hass-addon-addman/tree/main/addman
 init: false
 stage: experimental
 hassio_api: true
@@ -26,3 +26,4 @@ schema:
   config_file: str
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   watch_config_changes: bool
+# image: "ghcr.io/dadav/{arch}-addon-addman"

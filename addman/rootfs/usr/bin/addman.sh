@@ -6,60 +6,6 @@
 # This add-on can install and configure other add-ons.
 # ==============================================================================
 
-# update config
-
-
-# ------------------------------------------------------------------------------
-# Send a post request to the given url.
-#
-# Arguments:
-#   - URL
-#   - Data (optional)
-# Returns:
-#   Json result
-# ------------------------------------------------------------------------------
-http_post() {
-    bashio::log.trace "${FUNCNAME[0]}"
-
-    curl -sSL \ -X POST \
-         -d "${2}" \
-         -H "Content-Type: application/json" \
-         -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
-         "$1"
-}
-
-# ------------------------------------------------------------------------------
-# Make a get request to the give url.
-#
-# Arguments:
-#   URL
-# Returns:
-#   Json result
-# ------------------------------------------------------------------------------
-http_get() {
-    bashio::log.trace "${FUNCNAME[0]}"
-
-    curl -sSL \
-         -H "Content-Type: application/json" \
-         -H "Authorization: Bearer $SUPERVISOR_TOKEN" \
-         "$1"
-}
-
-# ------------------------------------------------------------------------------
-# Configure the given add-on
-#
-# Arguments:
-#   Add-on slug
-#   Config data
-# Returns:
-#   Json result
-# ------------------------------------------------------------------------------
-addon_set_config() {
-    bashio::log.trace "${FUNCNAME[0]}"
-
-    http_post http://supervisor/addons/"$1"/options "$2"
-}
-
 # ------------------------------------------------------------------------------
 # Converts a given YAML file or YAML string to YAML.
 #
@@ -81,23 +27,26 @@ function addman::yaml_to_json() {
 }
 
 # ------------------------------------------------------------------------------
-# Execute a YAML query.
+# Check if the given options are valid
 #
 # Arguments:
-#   $1 YAML string or path to a YAML file
-#   $2 yq filter (optional)
+#   $1 Addon options as String
 # ------------------------------------------------------------------------------
-function addman::yq() {
+function addman::addon.validate_options() {
     local data=${1}
-    local filter=${2:-}
+    local slug=${2:-self}
+    local response
 
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
-    if [[ -f "${data}" ]]; then
-        yq -M -N "$filter" "${data}"
-    else
-        yq -M -N "$filter" <<< "${data}"
+    response=$(bashio::api.supervisor POST "/addons/${slug}/options/validate" "$data")
+
+    if bashio::var.false "$(bashio::jq "${response}" ".valid")"; then
+        bashio::log.trace "response: ${response}"
+        return "${__BASHIO_EXIT_NOK}"
     fi
+
+    return "${__BASHIO_EXIT_OK}"
 }
 
 # ==============================================================================
@@ -113,9 +62,14 @@ main() {
 
     watch_config_changes=$(bashio::config 'watch_config_changes')
     config_file=$(bashio::config 'config_file')
+
     bashio::log.trace "Checking if $config_file exists..."
     if ! bashio::fs.file_exists "$config_file"; then
-        return "${__BASHIO_EXIT_NOK}"
+        if ! bashio::var.equals "$config_file" /config/addman.yaml; then
+            return "${__BASHIO_EXIT_NOK}"
+        fi
+        bashio::log.info '[addman] Copy default config to /config/addman.yaml'
+        cp /etc/addman/default.yaml /config/addman.yaml
     fi
 
     bashio::log.trace "Reading config from $config_file ..."
@@ -135,15 +89,17 @@ main() {
         bashio::log.trace "Start addon iteration"
         for slug in $(bashio::jq "$config_content" ".addons | keys | .[]"); do
             bashio::log.trace "Check if $slug is installed"
-            if ! bashio::addons.installed "$slug"; then
-                bashio::log.trace "It's not, install!"
+            if bashio::var.false "$(bashio::addons.installed "$slug")"; then
+                bashio::log.info "[${slug}] Installing add-on..."
                 bashio::addon.install "$slug"
             fi
             # Configure the addon
             local addon_settings
             local addon_options
+            local addon_changed
 
-            addon_settings=$(bashio::jq "$config_content" ".addons | to_entries[] | select(.key == \"${slug}\").value")
+            addon_settings=$(bashio::jq "$config_content" ".addons.${slug}")
+            addon_changed="false"
 
             if bashio::jq.exists "$addon_settings" ".boot"; then
                 bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"
@@ -157,6 +113,7 @@ main() {
                 bashio::addon.watchdog "$slug" "$(bashio::jq "$addon_settings" ".watchdog")"
             fi
 
+            # TODO: Add option to set Ingress-Panel
 
             if bashio::jq.exists "$addon_settings" ".options"; then
                 local current_options
@@ -165,21 +122,31 @@ main() {
                 addon_options=$(bashio::jq "$addon_settings" ".options")
                 bashio::log.trace "Found these options $addon_options"
 
-                for key in $(bashio::jq "$addon_options" "keys | .[]"); do
-                    bashio::log.trace "Getting value of $key"
-                    for value in $(bashio::jq "$addon_options" "to_entries[] | select(.key == \"${key}\").value"); do
-                        if ! bashio::var.equals "$(bashio::jq "$current_options" "$key")" "$value"; then
-                            bashio::log.trace "Setting $key to $value"
-                            bashio::addon.option "$key" "$value" "$slug"
-                        fi
+                if addman::addon.validate_options "$addon_options" "$slug"; then
+                    for key in $(bashio::jq "$addon_options" "keys | .[]"); do
+                        bashio::log.trace "Getting value of $key"
+                        for value in $(bashio::jq "$addon_options" ".${key}"); do
+                            if ! bashio::var.equals "$(bashio::jq "$current_options" ".${key}")" "$value"; then
+                                bashio::log.info "[${slug}] Setting $key to $value"
+                                bashio::addon.option "$key" "^$value" "$slug"
+                                addon_changed="true"
+                            fi
+                        done
                     done
-                done
+                else
+                    bashio::log.error "Invalid options detected (add-on: ${slug}). Skip."
+                    continue
+                fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".start"; then
                 if bashio::var.true "$(bashio::jq "$addon_settings" ".start")"; then
                     if ! bashio::var.equals "$(bashio::addon.state "$slug")" "started"; then
+                        bashio::log.info "[${slug}] Starting add-on..."
                         bashio::addon.start "$slug"
+                    elif bashio::var.true "$addon_changed"; then
+                        bashio::log.info "[${slug}] Options changed. Restarting add-on..."
+                        bashio::addon.restart "$slug"
                     fi
                 fi
             fi

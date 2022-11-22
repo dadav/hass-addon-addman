@@ -1,12 +1,20 @@
-# Add-on Manager (AddMan)
+# Add-on Manager Repository (AddMan)
 
-This add-on manages other add-ons.
+This repository contains a single add-on for home-assistant: AddMan
 
-## About
+To add this repository to your home-assistant, just click on this button:
+
+[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fdadav%2Fhass-addon-addman)
+
+## About AddMan
 
 With this add-on you can do two things:
 
 1. Install add-ons.
 2. Change the configuration of add-ons.
 
+**And the best thing:**
 
+You can store the config in your configs directory and therefore 
+use the git-pull add-on to store all the add-on configuration 
+in a git repository!1!!

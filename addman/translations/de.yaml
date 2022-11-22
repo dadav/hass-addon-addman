@@ -1,5 +1,14 @@
 ---
 configuration:
+  check_interval:
+    name: Prüfinterval
+    description: Die Sekunden zwischen den einzelnen Prüfungen/Anpassungen.
+  config_file:
+    name: Konfigurationsdatei
+    description: Der Pfad zu der Add-on Konfigurationsdatei.
   log_level:
     name: Log level
     description: Die Anzahl der Logs die von dem Addon generiert werden.
+  watch_config_changes:
+    name: Add-on Konfig beobachten
+    description: Lese die Konfigurationsdatei vor jeder Iteration neu ein.
