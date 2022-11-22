@@ -1,0 +1,5 @@
+---
+configuration:
+  log_level:
+    name: Log level
+    description: Die Anzahl der Logs die von dem Addon generiert werden.

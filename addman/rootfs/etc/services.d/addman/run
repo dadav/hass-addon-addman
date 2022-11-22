@@ -1,0 +1,9 @@
+#!/command/with-contenv bashio
+# ==============================================================================
+# Home Assistant Community Add-on: AddMan
+# Runs addman.sh script
+# ==============================================================================
+
+bashio::log.info "Starting AddMan..."
+
+exec /usr/bin/addman.sh

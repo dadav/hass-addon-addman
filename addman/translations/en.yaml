@@ -1,0 +1,14 @@
+---
+configuration:
+  check_interval:
+    name: Check interval
+    description: The amount of seconds to wait between each sync.
+  config_file:
+    name: Config file
+    description: The path to the add-on config file.
+  log_level:
+    name: Log level
+    description: The amount of logging the add-on should do.
+  watch_config_changes:
+    name: Watch config changes
+    description: Read the config (config_file) on every iteration.

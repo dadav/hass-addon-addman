@@ -1,0 +1,28 @@
+---
+name: AddMan
+version: 0.1.0
+slug: addman
+description: AddMan installs and configures add-ons.
+url: https://github.com/dadav/hass-addon-addman
+init: false
+stage: experimental
+hassio_api: true
+hassio_role: manager
+map:
+  - config:rw
+arch:
+  - aarch64
+  - amd64
+  - armhf
+  - armv7
+  - i386
+options:
+  check_interval: 600
+  config_file: /config/addman.yaml
+  log_level: info
+  watch_config_changes: false
+schema:
+  check_interval: int(1,)
+  config_file: str
+  log_level: list(trace|debug|info|notice|warning|error|fatal)
+  watch_config_changes: bool
