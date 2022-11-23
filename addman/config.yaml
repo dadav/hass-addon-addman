@@ -5,7 +5,7 @@ slug: addman
 description: AddMan installs and configures add-ons.
 url: https://github.com/dadav/hass-addon-addman/tree/main/addman
 init: false
-stage: experimental
+stage: stable
 hassio_api: true
 hassio_role: manager
 map:
