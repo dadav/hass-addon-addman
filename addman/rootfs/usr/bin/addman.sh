@@ -69,7 +69,7 @@ main() {
             return "${__BASHIO_EXIT_NOK}"
         fi
         bashio::log.info '[addman] Copy default config to /config/addman.yaml'
-        cp /etc/addman/default.yaml /config/addman.yaml
+        cp /etc/addman/defaults.yaml /config/addman.yaml
     fi
 
     bashio::log.trace "Reading config from $config_file ..."
