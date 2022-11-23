@@ -1,6 +1,6 @@
 ---
 addons:
-  addman:
+  self:
     start: true
     watchdog: true
     auto_update: true
