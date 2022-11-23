@@ -1,0 +1,34 @@
+---
+# EXAMPLE CONFIGURATION
+#
+# This configuration will install and configure
+# wireguard.
+# Also install vscode and start it.
+addons:
+  a0d7b954_wireguard:
+    start: true
+    watchdog: true
+    auto_updates: false
+    boot: true
+    options:
+      peers:
+        - name: foo
+          persistent_keep_alive: 30
+          endpoint: remote-endpoint:51820
+          addresses:
+            - 10.8.0.10
+          allowed_ips: []
+          public_key: bar
+          client_allowed_ips:
+            - 10.8.0.10/32
+            - 10.8.0.11/32
+      server:
+        adresses:
+          - 10.8.0.12
+        dns: []
+        host: home.local
+  a0d7b954_vscode:
+    start: true
+    watchdog: true
+    auto_updates: false
+    boot: true

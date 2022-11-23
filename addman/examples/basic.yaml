@@ -1,0 +1,11 @@
+---
+# EXAMPLE CONFIGURATION
+#
+# This configuration will just ensure that the add-ons
+# are installed.
+addons:
+  core_git_pull:
+  core_samba:
+  core_ssh:
+  cebe7a76_hassio_google_drive_backup:
+  a0d7b954_vscode:
