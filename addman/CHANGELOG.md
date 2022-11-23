@@ -7,7 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-- Removed stage option because linter said so
+### Fixed
+
+- Removed stage option because linter said so.
+
+### Added
+
+- Added some example configurations.
 
 ## [1.0.3] - 2022-11-23
 
