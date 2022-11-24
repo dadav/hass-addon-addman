@@ -3,6 +3,12 @@
 #
 # This configuration will just ensure that the add-ons
 # are installed.
+#
+# First, add the backup repo
+repositories:
+  - https://github.com/sabeechen/hassio-google-drive-backup
+
+# now install the add-ons
 addons:
   core_git_pull:
   core_samba:
