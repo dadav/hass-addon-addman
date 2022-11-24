@@ -56,10 +56,15 @@ An example add-on configuration looks like this:
 
 ```yaml
 ---
+# AddMan is part of another repository, so we need to add it first
+repositories:
+  - https://github.com/dadav/hass-addon-addman
+
 addons:
   # The key must be the slug of the add-on you want to manage.
   # It will be installed automatically.
-  addman:
+  # In this case we will install addman itself. Therefore "self"...
+  self:
     # If you set `start` to true, it will be started automatically.
     start: true
     # Enables the watchdog setting in home assistant.
@@ -68,6 +73,8 @@ addons:
     auto_update: true
     # Enables the boot setting in home assistant.
     boot: auto
+    # Enables the ingress panel on the side bar
+    ingress_panel: false
     # This must contain the valid add-on configuration.
     # The content will be validated before it will be applied.
     options:
