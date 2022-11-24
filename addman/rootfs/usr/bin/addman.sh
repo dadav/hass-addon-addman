@@ -27,6 +27,24 @@ function addman::yaml_to_json() {
 }
 
 # ------------------------------------------------------------------------------
+# Checks if a given value needs to be quoted (for jq)
+#
+# Arguments:
+#   $1 value
+# ------------------------------------------------------------------------------
+function addman::var.needs_quotes() {
+    local value=${1:-null}
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    if [[ ! "${value}" =~ ^y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF|[0-9]+$ ]]; then
+        return "${__BASHIO_EXIT_OK}"
+    fi
+
+    return "${__BASHIO_EXIT_NOK}"
+}
+
+# ------------------------------------------------------------------------------
 # Check if the given options are valid
 #
 # Arguments:
@@ -222,7 +240,11 @@ main() {
                         for value in $(bashio::jq "$addon_options" ".${key}"); do
                             if ! bashio::var.equals "$(bashio::jq "$current_options" ".${key}")" "$value"; then
                                 bashio::log.info "[${slug}] Setting $key to $value"
-                                bashio::addon.option "$key" "^$value" "$slug"
+                                if addman::var.needs_quotes "$value"; then
+                                    bashio::addon.option "$key" "$value" "$slug"
+                                else
+                                    bashio::addon.option "$key" "^$value" "$slug"
+                                fi
                                 addon_changed="true"
                             fi
                         done
