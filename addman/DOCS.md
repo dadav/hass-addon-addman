@@ -46,7 +46,7 @@ between each iteration.
 ### Option: `config_file`
 
 AddMan needs an additional configuration file. This configuration file
-contains the configuration of all the other add-ons you want to manage 
+contains the configuration of all the other add-ons you want to manage
 with AddMan.
 
 If you don't change this value, a default configuration will be copied 
