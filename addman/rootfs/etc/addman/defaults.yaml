@@ -1,10 +1,14 @@
 ---
+repositories:
+  - https://github.com/dadav/hass-addon-addman
+
 addons:
   self:
     start: true
     watchdog: true
     auto_update: true
     boot: auto
+    ingress_panel: false
     options:
       check_interval: 600
       config_file: /config/addman.yaml
