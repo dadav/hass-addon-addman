@@ -88,7 +88,7 @@ function addman::addons.add_repository() {
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
     if bashio::var.has_value "${repo}"; then
-        repo=$(bashio::var.json repository "^${repo}")
+        repo=$(bashio::var.json repository "${repo}")
         bashio::api.supervisor POST "/store/repositories" "${repo}"
     else
         return "${__BASHIO_EXIT_NOK}"
