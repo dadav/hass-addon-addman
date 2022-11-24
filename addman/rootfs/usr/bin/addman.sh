@@ -96,6 +96,29 @@ function addman::addons.add_repository() {
 
     return "${__BASHIO_EXIT_OK}"
 }
+
+# ------------------------------------------------------------------------------
+# Returns the current ingress_panel setting of this add-on.
+#
+# Arguments:
+#   $1 Add-on slug (optional, default: self)
+#   $2 Sets ingress_panel setting (optional).
+# ------------------------------------------------------------------------------
+function addman::addon.ingress_panel() {
+    local slug=${1:-'self'}
+    local ingress=${2:-}
+
+    bashio::log.trace "${FUNCNAME[0]}" "$@"
+
+    if bashio::var.has_value "${ingress}"; then
+        ingress=$(bashio::var.json ingress_panel "${ingress}")
+        bashio::api.supervisor POST "/addons/${slug}/options" "${ingress}"
+        bashio::cache.flush_all
+    else
+        bashio::addons "${slug}" "addons.${slug}.ingress_panel" '.ingress_panel'
+    fi
+}
+
 # ==============================================================================
 # RUN LOGIC
 # ------------------------------------------------------------------------------
@@ -182,7 +205,9 @@ main() {
                 bashio::addon.watchdog "$slug" "$(bashio::jq "$addon_settings" ".watchdog")"
             fi
 
-            # TODO: Add option to set Ingress-Panel
+            if bashio::jq.exists "$addon_settings" ".ingress_panel"; then
+                addman::addon.ingress_panel "$slug" "$(bashio::jq "$addon_settings" ".ingress_panel")"
+            fi
 
             if bashio::jq.exists "$addon_settings" ".options"; then
                 local current_options
