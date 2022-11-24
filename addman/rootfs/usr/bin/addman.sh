@@ -61,13 +61,13 @@ function addman::addons.fetch_repositories() {
 
     bashio::log.trace "${FUNCNAME[0]}"
 
-    if bashio::cache.exists "/store/repositories"; then
-        bashio::cache.get "/store/repositories"
+    if bashio::cache.exists ".store.repositories"; then
+        bashio::cache.get ".store.repositories"
         return "${__BASHIO_EXIT_OK}"
     fi
 
     response=$(bashio::api.supervisor GET "/store/repositories" false)
-    bashio::cache.set "/store/repositories" "${response}"
+    bashio::cache.set ".store.repositories" "${response}"
 
     printf "%s" "${response}"
 
