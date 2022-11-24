@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added some example configurations.
 - Added ingress_panel addon option
 - Added repository config option
+- Added check if options need to be quoted
 
 ## [1.0.3] - 2022-11-23
 
