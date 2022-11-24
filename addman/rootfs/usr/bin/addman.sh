@@ -49,6 +49,53 @@ function addman::addon.validate_options() {
     return "${__BASHIO_EXIT_OK}"
 }
 
+
+# ------------------------------------------------------------------------------
+# Fetch the currently installed repositories
+#
+# Returns
+# List of repo objects
+# ------------------------------------------------------------------------------
+function addman::addons.fetch_repositories() {
+    local response
+
+    bashio::log.trace "${FUNCNAME[0]}"
+
+    if bashio::cache.exists "/store/repositories"; then
+        bashio::cache.get "/store/repositories"
+        return "${__BASHIO_EXIT_OK}"
+    fi
+
+    response=$(bashio::api.supervisor GET "/store/repositories" false)
+    bashio::cache.set "/store/repositories" "${response}"
+
+    printf "%s" "${response}"
+
+    return "${__BASHIO_EXIT_OK}"
+}
+
+# ------------------------------------------------------------------------------
+# Install a new addon repository
+#
+# Arguments:
+#   $1 URL of the repository to add
+#
+# ------------------------------------------------------------------------------
+function addman::addons.add_repository() {
+    local repo=${1}
+    local response
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    if bashio::var.has_value "${repo}"; then
+        repo=$(bashio::var.json repository "^${repo}")
+        bashio::api.supervisor POST "/store/repositories" "${repo}"
+    else
+        return "${__BASHIO_EXIT_NOK}"
+    fi
+
+    return "${__BASHIO_EXIT_OK}"
+}
 # ==============================================================================
 # RUN LOGIC
 # ------------------------------------------------------------------------------
@@ -84,6 +131,28 @@ main() {
             bashio::log.trace "Reading config from $config_file ..."
             config_content=$(addman::yaml_to_json "$config_file")
             bashio::log.trace "Got this config: $config_content"
+        fi
+        bashio::log.trace "Start repositories iteration"
+
+        local current_repositories
+        local repository_changed="false"
+
+        current_repositories=$(addman::addons.fetch_repositories)
+
+        for repo in $(bashio::jq "$config_content" ".repositories[]"); do
+            bashio::log.trace "Check if $repo exists"
+            if bashio::jq.exists "${current_repositories}" ".[] | select(.url == \"${repo}\")"; then
+                bashio::log.trace "$repo already exists"
+                continue
+            fi
+            bashio::log.info "Adding addon repository: $repo"
+            addman::addons.add_repository "$repo"
+            repository_changed="true"
+        done
+
+        if bashio::var.true "$repository_changed"; then
+            bashio::log.info "Repositories have changed. Reloading add-ons."
+            bashio::addons.reload
         fi
 
         bashio::log.trace "Start addon iteration"
