@@ -185,13 +185,13 @@ main() {
                 bashio::log.info "[${slug}] Installing add-on..."
                 bashio::addon.install "$slug"
             fi
+
             # Configure the addon
             local addon_settings
             local addon_options
-            local addon_changed
+            local addon_changed="false"
 
             addon_settings=$(bashio::jq "$config_content" ".addons.${slug}")
-            addon_changed="false"
 
             if bashio::jq.exists "$addon_settings" ".boot"; then
                 bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"
