@@ -164,7 +164,7 @@ main() {
 
         for repo in $(bashio::jq "$config_content" ".repositories[]"); do
             bashio::log.trace "Check if $repo exists"
-            if bashio::jq.exists "${current_repositories}" ".[] | select(.url == \"${repo}\")"; then
+            if bashio::jq.has_value "${current_repositories}" ".[] | select(.url == \"${repo}\")"; then
                 bashio::log.trace "$repo already exists"
                 continue
             fi
