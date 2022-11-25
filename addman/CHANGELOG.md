@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Add "auto_restart" option
+
+### Changed
+
+- Option "start" renamed to "auto_start"
+
 ## [1.1.0] - 2022-11-24
 
 ### Fixed
