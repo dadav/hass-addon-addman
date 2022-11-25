@@ -198,7 +198,7 @@ main() {
 
         bashio::log.trace "Start addon iteration"
         for slug in $(bashio::jq "$config_content" ".addons | keys | .[]"); do
-            bashio::log.trace "Check if $slug is installed"
+            bashio::log.trace "[${slug}] Check if already installed"
             if bashio::var.false "$(bashio::addons.installed "$slug")"; then
                 bashio::log.info "[${slug}] Installing add-on..."
                 bashio::addon.install "$slug"
@@ -232,11 +232,11 @@ main() {
                 current_options=$(bashio::addon.options "$slug")
 
                 addon_options=$(bashio::jq "$addon_settings" ".options")
-                bashio::log.trace "Found these options $addon_options"
+                bashio::log.trace "[${slug}] Found these options $addon_options"
 
                 if addman::addon.validate_options "$addon_options" "$slug"; then
                     for key in $(bashio::jq "$addon_options" "keys | .[]"); do
-                        bashio::log.trace "Getting value of $key"
+                        bashio::log.trace "[${slug}] Getting value of $key"
                         for value in $(bashio::jq "$addon_options" ".${key}"); do
                             if ! bashio::var.equals "$(bashio::jq "$current_options" ".${key}")" "$value"; then
                                 bashio::log.info "[${slug}] Setting $key to $value"
@@ -250,13 +250,13 @@ main() {
                         done
                     done
                 else
-                    bashio::log.error "Invalid options detected (add-on: ${slug}). Skip."
+                    bashio::log.error "[${slug}] Invalid options detected. Skip."
                     continue
                 fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".start"; then
-                bashio::log.warning ".start is now called .auto_start and will be removed in the future."
+                bashio::log.warning "[${slug}] start is now called auto_start and will be removed in the future."
                 addon_settings=$(bashio::jq "$addon_settings" ".auto_start = .start")
             fi
 
