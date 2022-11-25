@@ -4,7 +4,8 @@ repositories:
 
 addons:
   self:
-    start: true
+    auto_start: true
+    auto_restart: true
     watchdog: true
     auto_update: true
     boot: auto

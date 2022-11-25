@@ -6,7 +6,8 @@
 # Also install vscode and start it.
 addons:
   a0d7b954_wireguard:
-    start: true
+    auto_start: true
+    auto_restart: true
     watchdog: true
     auto_updates: false
     boot: true
@@ -28,7 +29,8 @@ addons:
         dns: []
         host: home.local
   a0d7b954_vscode:
-    start: true
+    auto_start: true
+    auto_restart: true
     watchdog: true
     auto_updates: false
     boot: true

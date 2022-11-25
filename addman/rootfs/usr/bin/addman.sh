@@ -256,13 +256,22 @@ main() {
             fi
 
             if bashio::jq.exists "$addon_settings" ".start"; then
-                if bashio::var.true "$(bashio::jq "$addon_settings" ".start")"; then
+                bashio::log.warning ".start is now called .auto_start and will be removed in the future."
+                addon_settings=$(bashio::jq "$addon_settings" ".auto_start = .start")
+            fi
+
+            if bashio::jq.exists "$addon_settings" ".auto_start"; then
+                if bashio::var.true "$(bashio::jq "$addon_settings" ".auto_start")"; then
                     if ! bashio::var.equals "$(bashio::addon.state "$slug")" "started"; then
                         bashio::log.info "[${slug}] Starting add-on..."
                         bashio::addon.start "$slug"
                     elif bashio::var.true "$addon_changed"; then
-                        bashio::log.info "[${slug}] Options changed. Restarting add-on..."
-                        bashio::addon.restart "$slug"
+                        if bashio::jq.exists "$addon_settings" ".auto_restart"; then
+                            if bashio::var.true "$(bashio::jq "$addon_settings" ".auto_restart")"; then
+                                bashio::log.info "[${slug}] Options changed. Restarting add-on..."
+                                bashio::addon.restart "$slug"
+                            fi
+                        fi
                     fi
                 fi
             fi
