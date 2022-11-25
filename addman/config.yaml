@@ -17,11 +17,13 @@ arch:
   - i386
 options:
   check_interval: 600
+  check_updates_x_iterations: 6
   config_file: /config/addman.yaml
   log_level: info
   watch_config_changes: false
 schema:
   check_interval: int(1,)
+  check_updates_x_iterations: int(0,)
   config_file: str
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   watch_config_changes: bool

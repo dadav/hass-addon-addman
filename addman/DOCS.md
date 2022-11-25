@@ -37,6 +37,7 @@ The AddMan add-on default configuration looks like this:
 
 ```yaml
 check_interval: 600
+check_updates_x_iterations: 6
 config_file: /config/addman.yaml
 log_level: info
 watch_config_changes: false
@@ -50,6 +51,15 @@ it right if there is some difference.
 
 This option specifies the time (in seconds) how long AddMan should sleep
 between each iteration.
+
+### Option: `check_updates_x_iterations`
+
+After how many iterations `Check for updates` should be called.
+
+The supervisor default is set to 3 hours. So it only makes sense if you
+want to check more frequently.
+
+Set this to `0` to disable this functionality.
 
 ### Option: `config_file`
 
@@ -90,6 +100,7 @@ addons:
     # The content will be validated before it will be applied.
     options:
       check_interval: 600
+      check_updates_x_iterations: 6
       config_file: /config/addman.yaml
       log_level: info
       watch_config_changes: true

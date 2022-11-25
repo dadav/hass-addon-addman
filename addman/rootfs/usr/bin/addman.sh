@@ -142,14 +142,17 @@ function addman::addon.ingress_panel() {
 # ------------------------------------------------------------------------------
 main() {
     local sleep
+    local check_updates_x_iterations
     local config_file
     local config_content
     local watch_config_changes
+    local iterations=0
 
     bashio::log.trace "${FUNCNAME[0]}"
 
     watch_config_changes=$(bashio::config 'watch_config_changes')
     config_file=$(bashio::config 'config_file')
+    check_updates_x_iterations=$(bashio::config 'check_updates_x_iterations')
 
     bashio::log.trace "Checking if $config_file exists..."
     if ! bashio::fs.file_exists "$config_file"; then
@@ -168,6 +171,8 @@ main() {
     bashio::log.info "Seconds between checks is set to: ${sleep}"
 
     while true; do
+        iterations=$(( iterations+1 ))
+
         if bashio::var.true "$watch_config_changes"; then
             bashio::log.trace "Reading config from $config_file ..."
             config_content=$(addman::yaml_to_json "$config_file")
@@ -192,7 +197,10 @@ main() {
         done
 
         if bashio::var.true "$repository_changed"; then
-            bashio::log.info "Repositories have changed. Reloading add-ons."
+            bashio::log.info "Repositories have changed. Refreshing add-ons."
+            bashio::addons.reload
+        elif [[ $check_updates_x_iterations -gt 0 && $(( iterations % check_updates_x_iterations)) -eq 0 ]]; then
+            bashio::log.info "This is the ${iterations}. iteration, time to check for updates."
             bashio::addons.reload
         fi
 

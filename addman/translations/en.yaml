@@ -3,6 +3,13 @@ configuration:
   check_interval:
     name: Check interval
     description: The amount of seconds to wait between each sync.
+  check_updates_x_iterations:
+    name: Check for updates
+    description: |
+      After the given amount of iterations were made check if
+      there are add-on updates available.
+
+      Disable this by setting it to 0.
   config_file:
     name: Config file
     description: The path to the add-on config file.

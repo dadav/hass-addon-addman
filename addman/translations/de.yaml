@@ -3,6 +3,13 @@ configuration:
   check_interval:
     name: Prüfinterval
     description: Die Sekunden zwischen den einzelnen Prüfungen/Anpassungen.
+  check_updates_x_iterations:
+    name: Suche nach Updates
+    description: |
+      Suche nach Add-on updates wenn die angegeben anzahl an Iterationen
+      durchlaufen wurde.
+
+      Setze den Wert auf 0 um diese Funktion zu deaktivieren.
   config_file:
     name: Konfigurationsdatei
     description: Der Pfad zu der Add-on Konfigurationsdatei.
