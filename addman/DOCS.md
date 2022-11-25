@@ -11,11 +11,11 @@ managed by git.
 
 1. Add the repository to your home-assistant by clicking on this button:
 
-[![Add this repository to your Home Assistant instance.][repo-badge]][repo]
+  [![Add this repository to your Home Assistant instance.][repo-badge]][repo]
 
 1. Now open the add-on page by clicking on this button:
 
-[![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
+  [![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
 
 1. Click the "Install" button to install the add-on.
 1. Start the "AddMan" add-on.
