@@ -2,17 +2,19 @@
 
 AddMan is a simple add-on manager.
 
-AddMan installs, configures and (re)starts add-ons.
+Add-ons will be installed, configured and (re)started.
+
+The main goal is to provide a simple way to manage add-ons via files
+managed by git.
 
 ## Installation
 
 1. Add the repository to your home-assistant by clicking on this button:
 
-[![Open your Home Assistant instance and show the add add-on repository dialog with a specific repository URL pre-filled.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fdadav%2Fhass-addon-addman)
+[![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
 
-2. Navigate to the add-on section.
-3. Click on the `AddMan` add-on.
-4. Click on install.
+1. Click the "Install" button to install the add-on.
+1. Start the "AddMan" add-on.
 
 ## Configuration
 
@@ -20,12 +22,14 @@ There are two configuration locations you have to consider when using
 this add-on.
 
 1. The configuration of the add-on itself
-(which you can also do with the second option).
-2. The configuration of the other add-ons.
+(which you can also do with the second option). You usually change this
+configuration by clicking on the documentation tab.
+2. The configuration of the other add-ons, which reside (by default) in the
+`/config/addman.yaml` file.
 
 **Note**: _Remember to restart the add-on when the configuration is changed._
 
-AddMan add-on configuration:
+The AddMan add-on default configuration looks like this:
 
 ```yaml
 check_interval: 600
@@ -65,8 +69,11 @@ addons:
   # It will be installed automatically.
   # In this case we will install addman itself. Therefore "self"...
   self:
-    # If you set `start` to true, it will be started automatically.
-    start: true
+    # If you set `auto_start` to true, it will be started automatically.
+    auto_start: true
+    # If you set `auto_restart` to true, it will be restarted automatically.
+    # when the configuration changed
+    auto_restart: true
     # Enables the watchdog setting in home assistant.
     watchdog: true
     # Enables the auto-update setting in home assistant.
@@ -107,3 +114,55 @@ you are troubleshooting.
 If this option is set to true, the configuration file (`config_file`) will
 be read before every iteration. This has the benefit, that you can change
 the add-ons configuration on-the-fly.
+
+## Changelog
+
+This repository keeps a change log using [the conventions of keepachangelog.com][changelog].
+
+Releases are based on [Semantic Versioning][semver], and use the format
+of `MAJOR.MINOR.PATCH`. In a nutshell, the version will be incremented
+based on the following:
+
+- `MAJOR`: Incompatible or major changes.
+- `MINOR`: Backwards-compatible new features and enhancements.
+- `PATCH`: Backwards-compatible bugfixes and package updates.
+
+## Support
+
+Got questions? Have an idea?
+
+Feel free to [open an issue here][issue] GitHub.
+
+## Authors & contributors
+
+The structure of this project is based on an example add-on from [Franck Nijhof][frenck].
+
+## License
+
+MIT License
+
+Copyright (c) 2019-2022 dadav
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+[addon-badge]: https://my.home-assistant.io/badges/supervisor_addon.svg
+[addon]: https://my.home-assistant.io/redirect/supervisor_addon/?addon=1fa9e8ff_addman&repository_url=https%3A%2F%2Fgithub.com%2Fdadav%2Fhass-addon-addman
+[changelog]: https://keepachangelog.com/en/1.0.0/
+[issue]: https://github.com/dadav/hass-addon-addman/issues
+[semver]: http://semver.org/spec/v2.0.0
