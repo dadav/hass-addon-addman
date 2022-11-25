@@ -11,6 +11,10 @@ managed by git.
 
 1. Add the repository to your home-assistant by clicking on this button:
 
+[![Add this repository to your Home Assistant instance.][repo-badge]][repo]
+
+1. Now open the add-on page by clicking on this button:
+
 [![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
 
 1. Click the "Install" button to install the add-on.
@@ -165,4 +169,6 @@ SOFTWARE.
 [addon]: https://my.home-assistant.io/redirect/supervisor_addon/?addon=1fa9e8ff_addman&repository_url=https%3A%2F%2Fgithub.com%2Fdadav%2Fhass-addon-addman
 [changelog]: https://keepachangelog.com/en/1.0.0/
 [issue]: https://github.com/dadav/hass-addon-addman/issues
+[repo-badge]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
+[repo]: https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fdadav%2Fhass-addon-addman
 [semver]: http://semver.org/spec/v2.0.0
