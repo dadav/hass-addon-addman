@@ -5,6 +5,8 @@ profile addman flags=(attach_disconnected,mediate_deleted) {
 
   # Capabilities
   file,
+  network,
+  deny network raw,
   signal (send) set=(kill,term,int,hup,cont),
 
   # S6-Overlay
@@ -43,7 +45,8 @@ profile addman flags=(attach_disconnected,mediate_deleted) {
     /share/** rw,
 
     # Access required for service functionality
-    /usr/bin/addman.sh r,
     /usr/bin/yq rix,
+    /etc/addman/** r,
+    /package/admin/** rm,
   }
 }
