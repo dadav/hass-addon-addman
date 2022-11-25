@@ -12,6 +12,6 @@
 [armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
 [i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
 
-This add-on configures other add-ons (and itself).
+This add-on installs and configures other add-ons (and itself).
 
 Checkout the document page for more...
