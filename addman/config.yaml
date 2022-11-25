@@ -8,7 +8,7 @@ init: false
 hassio_api: true
 hassio_role: manager
 map:
-  - config:rw
+  - config
 arch:
   - aarch64
   - amd64
