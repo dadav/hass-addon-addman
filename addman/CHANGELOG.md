@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added check_updates_x_iterations option
-- Added apparmor config and codenotary mail
+- Added codenotary mail
 
 ## [1.2.0] - 2022-11-25
 
