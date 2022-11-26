@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2022-11-26
+
+### Fixed
+
+- Codenotary mail for base images
+
 ## [1.3.0] - 2022-11-26
 
 ### Added
