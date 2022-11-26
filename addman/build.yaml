@@ -7,4 +7,4 @@ build_from:
   i386: ghcr.io/hassio-addons/base:12.2.6
 codenotary:
   signer: dadav@protonmail.com
-  base_image: notary@home-assistant.io
+  base_image: codenotary@frenck.dev
