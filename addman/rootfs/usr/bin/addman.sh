@@ -37,11 +37,11 @@ function addman::var.needs_quotes() {
 
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
-    if [[ ! "${value}" =~ ^y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF|[0-9]+$ ]]; then
-        return "${__BASHIO_EXIT_OK}"
+    if [[ "${value}" =~ ^(y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF|[0-9]+)$ ]]; then
+        return "${__BASHIO_EXIT_NOK}"
     fi
 
-    return "${__BASHIO_EXIT_NOK}"
+    return "${__BASHIO_EXIT_OK}"
 }
 
 # ------------------------------------------------------------------------------
