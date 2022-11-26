@@ -85,8 +85,9 @@ addons:
   self:
     # If you set `auto_start` to true, it will be started automatically.
     auto_start: true
-    # If you set `auto_restart` to true, it will be restarted automatically.
+    # If you set `auto_restart` to false, it wont be restarted automatically.
     # when the configuration changed
+    # Default is true.
     auto_restart: true
     # Enables the watchdog setting in home assistant.
     watchdog: true
