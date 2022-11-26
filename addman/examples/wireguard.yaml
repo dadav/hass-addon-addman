@@ -30,7 +30,7 @@ addons:
         host: home.local
   a0d7b954_vscode:
     auto_start: true
-    auto_restart: true
+    auto_restart: false
     watchdog: true
     auto_updates: false
     boot: true
