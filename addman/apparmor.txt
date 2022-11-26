@@ -38,6 +38,10 @@ profile addman flags=(attach_disconnected,mediate_deleted) {
     # Receive signals from S6-Overlay
     signal (receive) peer=*_addman,
 
+    # Bashio
+    /usr/lib/bashio/** ix,
+    /tmp/** rwk,
+
     # Access to options.json and other files within your addon
     /data/** rw,
 
@@ -45,8 +49,12 @@ profile addman flags=(attach_disconnected,mediate_deleted) {
     /share/** rw,
 
     # Access required for service functionality
-    /usr/bin/yq rix,
-    /etc/addman/** r,
-    /package/admin/** rm,
+    /etc/** r,
+    /lib/** rm,
+    /usr/lib/** rm,
+    /usr/bin/coreutils rmix,
+    /usr/bin/curl rmix,
+    /usr/bin/jq rmix,
+    /usr/bin/yq rmix,
   }
 }

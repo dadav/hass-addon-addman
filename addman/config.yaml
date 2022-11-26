@@ -9,7 +9,7 @@ hassio_api: true
 hassio_role: manager
 codenotary: dadav@protonmail.com
 map:
-  - config
+  - config:rw
 arch:
   - aarch64
   - amd64
