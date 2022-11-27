@@ -245,17 +245,17 @@ main() {
                 if addman::addon.validate_options "$addon_options" "$slug"; then
                     for key in $(bashio::jq "$addon_options" "keys | .[]"); do
                         bashio::log.trace "[${slug}] Getting value of $key"
-                        for value in $(bashio::jq "$addon_options" ".\"${key}\""); do
-                            if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
-                                bashio::log.info "[${slug}] Setting $key to $value"
-                                if addman::var.needs_quotes "$value"; then
-                                    bashio::addon.option "$key" "$value" "$slug"
-                                else
-                                    bashio::addon.option "$key" "^$value" "$slug"
-                                fi
-                                addon_changed="true"
+                        local value
+                        value=$(bashio::jq "$addon_options" ".\"${key}\"")
+                        if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
+                            bashio::log.info "[${slug}] Setting $key to $value"
+                            if addman::var.needs_quotes "$value"; then
+                                bashio::addon.option "$key" "$value" "$slug"
+                            else
+                                bashio::addon.option "$key" "^$value" "$slug"
                             fi
-                        done
+                            addon_changed="true"
+                        fi
                     done
                 else
                     bashio::log.error "[${slug}] Invalid options detected. Skip."
