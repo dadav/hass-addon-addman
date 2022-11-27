@@ -1,0 +1,22 @@
+---
+# EXAMPLE CONFIGURATION
+#
+# This configuration makes use of yaml anchors/aliases.
+# Because this is not really "basic yaml", I called this an advanced
+# example.
+#
+defaults: &defaults
+  auto_start: true
+  auto_restart: true
+  ingress_panel: false
+  watchdog: true
+  auto_updates: false
+  boot: true
+
+addons:
+  a0d7b954_wireguard:
+    <<: *defaults
+    auto_updates: false
+  a0d7b954_vscode:
+    <<: *defaults
+    ingress_panel: true
