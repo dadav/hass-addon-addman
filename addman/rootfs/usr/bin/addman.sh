@@ -217,7 +217,7 @@ main() {
             local addon_options
             local addon_changed="false"
 
-            addon_settings=$(bashio::jq "$config_content" ".addons.${slug}")
+            addon_settings=$(bashio::jq "$config_content" ".addons.\"${slug}\"")
 
             if bashio::jq.exists "$addon_settings" ".boot"; then
                 bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"
@@ -245,8 +245,8 @@ main() {
                 if addman::addon.validate_options "$addon_options" "$slug"; then
                     for key in $(bashio::jq "$addon_options" "keys | .[]"); do
                         bashio::log.trace "[${slug}] Getting value of $key"
-                        for value in $(bashio::jq "$addon_options" ".${key}"); do
-                            if ! bashio::var.equals "$(bashio::jq "$current_options" ".${key}")" "$value"; then
+                        for value in $(bashio::jq "$addon_options" ".\"${key}\""); do
+                            if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
                                 bashio::log.info "[${slug}] Setting $key to $value"
                                 if addman::var.needs_quotes "$value"; then
                                     bashio::addon.option "$key" "$value" "$slug"
