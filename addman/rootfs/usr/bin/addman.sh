@@ -32,16 +32,16 @@ function addman::yaml_to_json() {
 # Arguments:
 #   $1 value
 # ------------------------------------------------------------------------------
-function addman::var.needs_quotes() {
+function addman::var.is_yaml_bool() {
     local value=${1:-null}
 
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
     if [[ "${value}" =~ ^(y|Y|yes|Yes|YES|n|N|no|No|NO|true|True|TRUE|false|False|FALSE|on|On|ON|off|Off|OFF|[0-9]+)$ ]]; then
-        return "${__BASHIO_EXIT_NOK}"
+        return "${__BASHIO_EXIT_OK}"
     fi
 
-    return "${__BASHIO_EXIT_OK}"
+    return "${__BASHIO_EXIT_NOK}"
 }
 
 # ------------------------------------------------------------------------------
@@ -249,10 +249,10 @@ main() {
                         value=$(bashio::jq "$addon_options" ".\"${key}\"")
                         if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
                             bashio::log.info "[${slug}] Setting $key to $value"
-                            if addman::var.needs_quotes "$value"; then
-                                bashio::addon.option "$key" "$value" "$slug"
-                            else
+                            if addman::var.is_yaml_bool "$value" || [[ "${value[0]}" =~ [\[{] ]]; then
                                 bashio::addon.option "$key" "^$value" "$slug"
+                            else
+                                bashio::addon.option "$key" "$value" "$slug"
                             fi
                             addon_changed="true"
                         fi
