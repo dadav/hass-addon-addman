@@ -131,6 +131,28 @@ If this option is set to true, the configuration file (`config_file`) will
 be read before every iteration. This has the benefit, that you can change
 the add-ons configuration on-the-fly.
 
+### Secrets
+
+You can add a `addman.yaml.secrets` file (or the name you've chosen
+via `config_file` + `.secrets`) with a content like this:
+
+```yaml
+---
+my_first_secret: &first_secret "this_is_a_secret"
+my_second_secret: &second_secret "this_is_another_secret"
+```
+
+And you can reference them like this:
+
+```yaml
+addons:
+  some_addon:
+    options:
+      password: *first_secret
+```
+
+This is done with standard YAML anchoring and aliasing.
+
 ## Changelog
 
 This repository keeps a change log using [the conventions of keepachangelog.com][changelog].

@@ -7,22 +7,25 @@
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
-# Converts a given YAML file or YAML string to YAML.
+# Converts a given YAML file to a json string.
+# Also looks for a $path.secrets file so you can use secrets
+# in your $path file.
 #
 # Arguments:
-#   $1 YAML string or path to a YAML file
+#   $1 path to a YAML file
 # Returns:
 #   JSON string
 # ------------------------------------------------------------------------------
 function addman::yaml_to_json() {
-    local data=${1}
+    local path=${1}
 
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
-    if [[ -f "${data}" ]]; then
-        yq -M -N -oj "." "${data}"
+    if bashio::fs.file_exists "${path}.secrets"; then
+        bashio::log.trace "Reading the secrets file (${path}.secrets)."
+        cat "${path}.secrets" "${path}" | yq -M -N -oj "explode(.) | del(select(document_index == 0))"
     else
-        yq -M -N -oj "." <<< "${data}"
+        yq -M -N -oj "." "${path}"
     fi
 }
 
