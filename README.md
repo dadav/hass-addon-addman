@@ -9,6 +9,8 @@
   via a git repository.
 </p>
 
+## ⚡Installation
+
 To add this repository to your home-assistant, just click on this button:
 
 [![Add this repository to your Home Assistant instance.][repo-badge]][repo]
@@ -19,7 +21,7 @@ And then install the add-on by pressing on this button:
 
 and simply click on `install`.
 
-## About AddMan
+## 🐝About AddMan
 
 With this add-on you can do two things:
 
