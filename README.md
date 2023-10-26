@@ -3,9 +3,9 @@
 <p align="center">
   <img src="images/logo.jpg" width="400" />
   <br />
-  This repository contains a single add-on for home-assistant: [AddMan](./addman)
+  This repository contains a single add-on for home-assistant: <a href="./addman">AddMan</a>
   <br />
-  [AddMan](./addman) can be used to configure [Home-Assistant](https://www.home-assistant.io/) addons
+  <a href="./addman">AddMan</a> can be used to configure <a href="https://www.home-assistant.io">Home-Assistant</a>
   via a git repository.
 </p>
 
