@@ -1,6 +1,6 @@
 ---
 name: AddMan
-version: 1.5.6
+version: 1.5.7
 slug: addman
 description: AddMan installs and configures add-ons.
 url: https://github.com/dadav/hass-addon-addman/tree/main/addman
@@ -28,4 +28,4 @@ schema:
   config_file: str
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   watch_config_changes: bool
-image: "ghcr.io/dadav/{arch}-addon-addman"
+image: ghcr.io/dadav/{arch}-addon-addman

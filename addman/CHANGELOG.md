@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.7] - 2023-10-26
+
+### Fixed
+
+- Bump deps to latest version
+
 ## [1.5.6] - 2023-09-03
 
 ### Fixed
@@ -59,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed splitting issue
 -
+
 ## [1.4.1] - 2022-11-27
 
 ### Fixed
