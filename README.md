@@ -1,14 +1,21 @@
-# Add-on Manager Repository (AddMan)
+<h1 align="center">🔥AddMan</h1>
 
-This repository contains a single add-on for home-assistant: [AddMan](./addman)
+<p align="center">
+  <img src="images/logo.jpg" width="400" />
+  <br />
+  This repository contains a single add-on for home-assistant: [AddMan](./addman)
+  <br />
+  [AddMan](./addman) can be used to configure [Home-Assistant](https://www.home-assistant.io/) addons
+  via a git repository.
+</p>
 
 To add this repository to your home-assistant, just click on this button:
 
-  [![Add this repository to your Home Assistant instance.][repo-badge]][repo]
+[![Add this repository to your Home Assistant instance.][repo-badge]][repo]
 
 And then install the add-on by pressing on this button:
 
-  [![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
+[![Open this add-on in your Home Assistant instance.][addon-badge]][addon]
 
 and simply click on `install`.
 
@@ -21,8 +28,8 @@ With this add-on you can do two things:
 
 **And the best thing:**
 
-You can store the config in your configs directory and therefore 
-use the git-pull add-on to store all the add-on configuration 
+You can store the config in your configs directory and therefore
+use the git-pull add-on to store all the add-on configuration
 in a git repository!1!!
 
 [addon-badge]: https://my.home-assistant.io/badges/supervisor_addon.svg
