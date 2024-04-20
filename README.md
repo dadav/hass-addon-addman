@@ -34,6 +34,14 @@ You can store the config in your configs directory and therefore
 use the git-pull add-on to store all the add-on configuration
 in a git repository!1!!
 
+### 🎨Configuration
+
+The addons are managed in a file called `addman.yaml` (by default). It contains the config
+of all the other configurations. Addman will also look for a file called `addman.yaml.secrets`
+which you can use to inject secrets.
+
+Checkout [the examples](./addman/examples/) to get an idea how to configure addman.
+
 [addon-badge]: https://my.home-assistant.io/badges/supervisor_addon.svg
 [addon]: https://my.home-assistant.io/redirect/supervisor_addon/?addon=1fa9e8ff_addman&repository_url=https%3A%2F%2Fgithub.com%2Fdadav%2Fhass-addon-addman
 [repo-badge]: https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg
