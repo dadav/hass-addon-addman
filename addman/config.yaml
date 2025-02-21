@@ -8,7 +8,6 @@ init: false
 hassio_api: true
 hassio_role: manager
 codenotary: dadav@protonmail.com
-startup: application
 panel_icon: home-floor-a
 map:
   - type: addons
