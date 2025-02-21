@@ -8,8 +8,16 @@ init: false
 hassio_api: true
 hassio_role: manager
 codenotary: dadav@protonmail.com
+startup: application
+panel_icon: home-floor-a
 map:
-  - config:rw
+  - type: addons
+    read_only: false
+  - type: all_addon_configs
+    read_only: false
+  - type: homeassistant_config
+    read_only: false
+    path: /config
 arch:
   - aarch64
   - amd64
