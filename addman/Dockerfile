@@ -20,7 +20,7 @@ ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
 
 # install yq
-RUN wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${BUILD_ARCH} -O /usr/bin/yq \
+RUN wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/yq_linux_${BUILD_ARCH} -O /usr/bin/yq \
   && chmod +x /usr/bin/yq
 
 # Labels
