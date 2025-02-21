@@ -39,6 +39,14 @@
       "datasourceTemplate": "github-releases",
       "depNameTemplate": "home-assistant/cli",
       "versioningTemplate": "loose"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["/Dockerfile$"],
+      "matchStrings": ["ARG YQ_VERSION=[\"']?(?<currentValue>.+?)[\"']?\\s+"],
+      "datasourceTemplate": "github-releases",
+      "depNameTemplate": "mikefarah/yq",
+      "versioningTemplate": "loose"
     }
   ],
   "packageRules": [

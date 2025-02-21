@@ -7,10 +7,10 @@ COPY rootfs /
 
 # Setup base
 RUN apk add --no-cache --update-cache \
-  coreutils=9.1-r0 \
-  yq=4.25.1-r5
+  coreutils=9.5-r2
 
 # Build arguments
+ARG YQ_VERSION=v4.45.1
 ARG BUILD_ARCH
 ARG BUILD_DATE
 ARG BUILD_DESCRIPTION
@@ -18,6 +18,10 @@ ARG BUILD_NAME
 ARG BUILD_REF
 ARG BUILD_REPOSITORY
 ARG BUILD_VERSION
+
+# install yq
+RUN wget -q https://github.com/mikefarah/yq/releases/download/${YQ_VERSION}/${BUILD_ARCH} -O /usr/bin/yq \
+  && chmod +x /usr/bin/yq
 
 # Labels
 LABEL \
