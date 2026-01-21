@@ -10,13 +10,13 @@ defaults: &defaults
   auto_restart: true
   ingress_panel: false
   watchdog: true
-  auto_updates: false
+  auto_update: false
   boot: true
 
 addons:
   a0d7b954_wireguard:
     <<: *defaults
-    auto_updates: false
+    auto_update: false
   a0d7b954_vscode:
     <<: *defaults
     ingress_panel: true

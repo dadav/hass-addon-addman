@@ -29,10 +29,16 @@ options:
   config_file: /config/addman.yaml
   log_level: info
   watch_config_changes: false
+  dry_run: false
+  auto_uninstall: true
+  health_check_timeout: 10
 schema:
   check_interval: int(1,)
   check_updates_x_iterations: int(0,)
   config_file: str
   log_level: list(trace|debug|info|notice|warning|error|fatal)
   watch_config_changes: bool
+  dry_run: bool
+  auto_uninstall: bool
+  health_check_timeout: int(1,60)
 image: ghcr.io/dadav/{arch}-addon-addman

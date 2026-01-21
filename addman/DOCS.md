@@ -131,6 +131,69 @@ If this option is set to true, the configuration file (`config_file`) will
 be read before every iteration. This has the benefit, that you can change
 the add-ons configuration on-the-fly.
 
+### Option: `dry_run`
+
+When set to `true`, AddMan will log all actions it would take but won't
+actually make any changes to the system. This is useful for:
+
+- Testing new configurations before applying them
+- Verifying addon settings and understanding what will change
+- Debugging configuration issues
+- Understanding what AddMan will do on the next iteration
+
+**Default:** `false`
+
+**Example output:**
+```
+[DRY-RUN] Would add repository: https://example.com/repo
+[DRY-RUN] Would install addon: a0d7b954_vscode
+[DRY-RUN] Would set a0d7b954_vscode.port to 8080
+[DRY-RUN] Would start addon: a0d7b954_vscode
+```
+
+### Option: `auto_uninstall`
+
+When set to `true`, AddMan will automatically uninstall addons that are
+removed from your `addman.yaml` configuration file. AddMan tracks which
+addons it manages and will remove any that are no longer in the config.
+
+**Safety Note:** Set to `false` if you want to manually control addon
+uninstallation. When disabled, removed addons will remain installed but
+won't be managed by AddMan anymore.
+
+**Default:** `true`
+
+**Example:** If you remove an addon from your config:
+```yaml
+# Before:
+addons:
+  a0d7b954_vscode:
+    auto_start: true
+
+# After (addon removed):
+addons:
+  # a0d7b954_vscode is no longer here
+```
+
+AddMan will automatically uninstall `a0d7b954_vscode` on the next iteration
+(if `auto_uninstall` is `true`).
+
+### Option: `health_check_timeout`
+
+Specifies the timeout in seconds for health checks after starting or
+restarting an addon. AddMan will verify that addons actually reach the
+"started" state after start/restart operations.
+
+If an addon fails to start within the timeout period, AddMan will log a
+warning but continue managing other addons.
+
+**Valid values:** 1-60 seconds
+
+**Default:** `10`
+
+**Example:** With `health_check_timeout: 15`, AddMan will wait up to 15
+seconds for an addon to reach the "started" state, checking every 2 seconds.
+
 ### Secrets
 
 You can add a `addman.yaml.secrets` file (or the name you've chosen

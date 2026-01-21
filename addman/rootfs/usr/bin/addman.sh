@@ -18,16 +18,32 @@
 # ------------------------------------------------------------------------------
 function addman::yaml_to_json() {
     local path=${1}
+    local result
 
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
     if bashio::fs.file_exists "${path}.secrets"; then
+        # Check secrets file permissions
+        local perms
+        perms=$(stat -c "%a" "${path}.secrets" 2>/dev/null || echo "000")
+        if [[ "$perms" != "600" ]] && [[ "$perms" != "400" ]]; then
+            bashio::log.warning "Secrets file has permissive permissions ($perms). Recommend chmod 600 ${path}.secrets"
+        fi
         bashio::log.trace "Reading the secrets file (${path}.secrets)."
         # For-loop is need to add a newline after the secret file
-        yq -M -N -oj "explode(.) | select(document_index == 1)" <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done)
+        if ! result=$(yq -M -N -oj "explode(.) | select(document_index == 1)" <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done) 2>&1); then
+            bashio::log.error "Failed to parse YAML with secrets: $result"
+            return "${__BASHIO_EXIT_NOK}"
+        fi
     else
-        yq -M -N -oj "." "${path}"
+        if ! result=$(yq -M -N -oj "." "${path}" 2>&1); then
+            bashio::log.error "Failed to parse YAML: $result"
+            return "${__BASHIO_EXIT_NOK}"
+        fi
     fi
+
+    echo "$result"
+    return "${__BASHIO_EXIT_OK}"
 }
 
 # ------------------------------------------------------------------------------
@@ -135,9 +151,80 @@ function addman::addon.ingress_panel() {
     if bashio::var.has_value "${ingress}"; then
         ingress=$(bashio::var.json ingress_panel "${ingress}")
         bashio::api.supervisor POST "/addons/${slug}/options" "${ingress}"
-        bashio::cache.flush_all
+        # Only flush repository cache, not all caches
+        bashio::cache.flush ".store.repositories"
     else
         bashio::addons "${slug}" "addons.${slug}.ingress_panel" '.ingress_panel'
+    fi
+}
+
+# ------------------------------------------------------------------------------
+# Verify that an addon is running after start/restart
+#
+# Arguments:
+#   $1 Addon slug
+#   $2 Timeout in seconds (optional, default from config)
+#
+# Returns:
+#   0 if addon is running, 1 otherwise
+# ------------------------------------------------------------------------------
+addman::addon.verify_running() {
+    local slug=${1}
+    local timeout=${2:-10}
+    local max_attempts=$((timeout / 2))
+    local attempt=1
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+    bashio::log.debug "[${slug}] Verifying addon is running (timeout: ${timeout}s)..."
+
+    while [[ $attempt -le $max_attempts ]]; do
+        local state
+        state=$(bashio::addon.state "$slug")
+
+        if [[ "$state" == "started" ]]; then
+            bashio::log.debug "[${slug}] Addon is running"
+            return "${__BASHIO_EXIT_OK}"
+        fi
+
+        bashio::log.trace "[${slug}] State: $state, attempt $attempt/$max_attempts"
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+
+    bashio::log.error "[${slug}] Addon failed health check (final state: $state)"
+    return "${__BASHIO_EXIT_NOK}"
+}
+
+# ------------------------------------------------------------------------------
+# Save currently managed addon slugs to state file
+#
+# Arguments:
+#   $1 JSON array of addon slugs
+# ------------------------------------------------------------------------------
+addman::state.save_managed_addons() {
+    local addons=${1}
+    local state_file="/data/addman_state.json"
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    echo "$addons" > "$state_file"
+}
+
+# ------------------------------------------------------------------------------
+# Get previously managed addon slugs from state file
+#
+# Returns:
+#   JSON array of addon slugs (or empty array if no state file)
+# ------------------------------------------------------------------------------
+addman::state.get_managed_addons() {
+    local state_file="/data/addman_state.json"
+
+    bashio::log.trace "${FUNCNAME[0]}"
+
+    if [[ -f "$state_file" ]]; then
+        cat "$state_file"
+    else
+        echo "[]"
     fi
 }
 
@@ -150,6 +237,9 @@ main() {
     local config_file
     local config_content
     local watch_config_changes
+    local dry_run
+    local auto_uninstall
+    local health_check_timeout
     local iterations=0
 
     bashio::log.trace "${FUNCNAME[0]}"
@@ -157,6 +247,19 @@ main() {
     watch_config_changes=$(bashio::config 'watch_config_changes')
     config_file=$(bashio::config 'config_file')
     check_updates_x_iterations=$(bashio::config 'check_updates_x_iterations')
+    dry_run=$(bashio::config 'dry_run')
+    auto_uninstall=$(bashio::config 'auto_uninstall')
+    health_check_timeout=$(bashio::config 'health_check_timeout')
+
+    # Validate config file path to prevent traversal attacks
+    if [[ "$config_file" == *".."* ]]; then
+        bashio::log.fatal "Config file path contains '..' which is not allowed for security reasons"
+        bashio::exit.nok
+    fi
+
+    if [[ ! "$config_file" =~ ^/(config|share|ssl|addons|backup)/ ]]; then
+        bashio::log.warning "Config file not in standard Home Assistant directory: $config_file"
+    fi
 
     bashio::log.trace "Checking if $config_file exists..."
     if ! bashio::fs.file_exists "$config_file"; then
@@ -168,19 +271,60 @@ main() {
     fi
 
     bashio::log.trace "Reading config from $config_file ..."
-    config_content=$(addman::yaml_to_json "$config_file")
-    bashio::log.trace "Got this config: $config_content"
+    if ! config_content=$(addman::yaml_to_json "$config_file"); then
+        bashio::log.fatal "Failed to parse configuration file: $config_file"
+        bashio::exit.nok
+    fi
+    # Hash config to avoid exposing secrets in logs
+    local config_hash
+    config_hash=$(echo "$config_content" | sha256sum | cut -d' ' -f1)
+    bashio::log.trace "Config loaded successfully (hash: ${config_hash:0:8})"
+
+    # Validate configuration structure
+    if ! bashio::jq.exists "$config_content" ".repositories" && ! bashio::jq.exists "$config_content" ".addons"; then
+        bashio::log.warning "Configuration has no repositories or addons defined - nothing to manage"
+    fi
+
+    if bashio::jq.exists "$config_content" ".addons"; then
+        local addon_count
+        addon_count=$(echo "$config_content" | jq -r '.addons | length')
+        bashio::log.info "Found ${addon_count} addon(s) to manage"
+    fi
+
+    if bashio::jq.exists "$config_content" ".repositories"; then
+        local repo_count
+        repo_count=$(echo "$config_content" | jq -r '.repositories | length')
+        bashio::log.info "Found ${repo_count} repository(ies) to add"
+    fi
 
     sleep=$(bashio::config 'check_interval')
     bashio::log.info "Seconds between checks is set to: ${sleep}"
+
+    if bashio::var.true "$dry_run"; then
+        bashio::log.warning "DRY-RUN MODE ENABLED - No changes will be made to the system"
+    fi
+
+    # Setup graceful shutdown handler
+    cleanup() {
+        bashio::log.info "Received shutdown signal, exiting gracefully..."
+        exit 0
+    }
+    trap cleanup SIGTERM SIGINT
 
     while true; do
         iterations=$(( iterations+1 ))
 
         if bashio::var.true "$watch_config_changes"; then
             bashio::log.trace "Reading config from $config_file ..."
-            config_content=$(addman::yaml_to_json "$config_file")
-            bashio::log.trace "Got this config: $config_content"
+            if ! config_content=$(addman::yaml_to_json "$config_file"); then
+                bashio::log.error "Failed to reload configuration file: $config_file - using previous config"
+                # Continue with previous config_content instead of exiting
+            else
+                # Hash config to avoid exposing secrets in logs
+                local config_hash
+                config_hash=$(echo "$config_content" | sha256sum | cut -d' ' -f1)
+                bashio::log.trace "Config reloaded successfully (hash: ${config_hash:0:8})"
+            fi
         fi
         bashio::log.trace "Start repositories iteration"
 
@@ -189,18 +333,26 @@ main() {
 
         current_repositories=$(addman::addons.fetch_repositories)
 
-        for repo in $(bashio::jq "$config_content" ".repositories[]"); do
+        while IFS= read -r repo; do
+            [[ -z "$repo" ]] && continue  # Skip empty lines
             bashio::log.trace "Check if $repo exists"
-            if bashio::jq.has_value "${current_repositories}" ".[] | select(.url == \"${repo}\")"; then
+            # Use jq --arg for safe variable interpolation
+            if echo "${current_repositories}" | jq -e --arg url "$repo" '.[] | select(.url == $url)' > /dev/null; then
                 bashio::log.trace "$repo already exists"
                 continue
             fi
-            bashio::log.info "Adding addon repository: $repo"
-            addman::addons.add_repository "$repo"
+            if bashio::var.true "$dry_run"; then
+                bashio::log.info "[DRY-RUN] Would add repository: $repo"
+            else
+                bashio::log.info "Adding addon repository: $repo"
+                addman::addons.add_repository "$repo"
+            fi
             repository_changed="true"
-        done
+        done < <(bashio::jq "$config_content" -r ".repositories[]? // empty")
 
         if bashio::var.true "$repository_changed"; then
+            # Invalidate repository cache when repositories change
+            bashio::cache.flush ".store.repositories"
             bashio::log.info "Repositories have changed. Refreshing add-ons."
             bashio::addons.reload
         elif [[ $check_updates_x_iterations -gt 0 && $(( iterations % check_updates_x_iterations)) -eq 0 ]]; then
@@ -209,11 +361,20 @@ main() {
         fi
 
         bashio::log.trace "Start addon iteration"
-        for slug in $(bashio::jq "$config_content" ".addons | keys | .[]"); do
+        while IFS= read -r slug; do
+            [[ -z "$slug" ]] && continue  # Skip empty lines
             bashio::log.trace "[${slug}] Check if already installed"
             if bashio::var.false "$(bashio::addons.installed "$slug")"; then
-                bashio::log.info "[${slug}] Installing add-on..."
-                bashio::addon.install "$slug"
+                if bashio::var.true "$dry_run"; then
+                    bashio::log.info "[DRY-RUN] Would install addon: ${slug}"
+                else
+                    bashio::log.info "[${slug}] Installing add-on..."
+                    if ! bashio::addon.install "$slug"; then
+                        bashio::log.error "[${slug}] Failed to install addon - skipping configuration"
+                        continue
+                    fi
+                    bashio::log.info "[${slug}] Successfully installed"
+                fi
             fi
 
             # Configure the addon
@@ -247,20 +408,25 @@ main() {
                 bashio::log.trace "[${slug}] Found these options $addon_options"
 
                 if addman::addon.validate_options "$addon_options" "$slug"; then
-                    for key in $(bashio::jq "$addon_options" "keys | .[]"); do
+                    while IFS= read -r key; do
+                        [[ -z "$key" ]] && continue  # Skip empty lines
                         bashio::log.trace "[${slug}] Getting value of $key"
                         local value
                         value=$(bashio::jq "$addon_options" ".\"${key}\"")
                         if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
-                            bashio::log.info "[${slug}] Setting $key to $value"
-                            if addman::var.is_yaml_bool "$value" || [[ "${value[0]}" =~ [\[{] ]]; then
-                                bashio::addon.option "$key" "^$value" "$slug"
+                            if bashio::var.true "$dry_run"; then
+                                bashio::log.info "[DRY-RUN] Would set ${slug}.${key} to $value"
                             else
-                                bashio::addon.option "$key" "$value" "$slug"
+                                bashio::log.info "[${slug}] Setting $key to $value"
+                                if addman::var.is_yaml_bool "$value" || [[ "${value:0:1}" =~ [\[{] ]]; then
+                                    bashio::addon.option "$key" "^$value" "$slug"
+                                else
+                                    bashio::addon.option "$key" "$value" "$slug"
+                                fi
                             fi
                             addon_changed="true"
                         fi
-                    done
+                    done < <(bashio::jq "$addon_options" -r "keys[]? // empty")
                 else
                     bashio::log.error "[${slug}] Invalid options detected. Skip."
                     continue
@@ -275,18 +441,72 @@ main() {
             if bashio::jq.exists "$addon_settings" ".auto_start"; then
                 if bashio::var.true "$(bashio::jq "$addon_settings" ".auto_start")"; then
                     if ! bashio::var.equals "$(bashio::addon.state "$slug")" "started"; then
-                        bashio::log.info "[${slug}] Starting add-on..."
-                        bashio::addon.start "$slug"
+                        if bashio::var.true "$dry_run"; then
+                            bashio::log.info "[DRY-RUN] Would start addon: ${slug}"
+                        else
+                            bashio::log.info "[${slug}] Starting add-on..."
+                            if bashio::addon.start "$slug"; then
+                                # Verify addon started successfully
+                                if ! addman::addon.verify_running "$slug" "$health_check_timeout"; then
+                                    bashio::log.warning "[${slug}] Addon started but failed health check"
+                                fi
+                            else
+                                bashio::log.error "[${slug}] Failed to start addon"
+                            fi
+                        fi
                     elif bashio::var.true "$addon_changed"; then
                         if ! bashio::jq.exists "$addon_settings" ".auto_restart" || \
                              bashio::var.true "$(bashio::jq "$addon_settings" ".auto_restart")"; then
-                                bashio::log.info "[${slug}] Options changed. Restarting add-on..."
-                                bashio::addon.restart "$slug"
+                                if bashio::var.true "$dry_run"; then
+                                    bashio::log.info "[DRY-RUN] Would restart addon: ${slug}"
+                                else
+                                    bashio::log.info "[${slug}] Options changed. Restarting add-on..."
+                                    if bashio::addon.restart "$slug"; then
+                                        # Verify addon restarted successfully
+                                        if ! addman::addon.verify_running "$slug" "$health_check_timeout"; then
+                                            bashio::log.warning "[${slug}] Addon restarted but failed health check"
+                                        fi
+                                    else
+                                        bashio::log.error "[${slug}] Failed to restart addon"
+                                    fi
+                                fi
                         fi
                     fi
                 fi
             fi
-        done
+        done < <(bashio::jq "$config_content" -r ".addons | keys[]? // empty")
+
+        # Handle addon uninstall if auto_uninstall is enabled
+        if bashio::var.true "$auto_uninstall"; then
+            local previous_addons
+            local current_addon_slugs
+
+            previous_addons=$(addman::state.get_managed_addons)
+            current_addon_slugs=$(echo "$config_content" | jq -r -c '.addons | keys? // []')
+
+            # Find addons that were managed but are no longer in config
+            while IFS= read -r slug; do
+                [[ -z "$slug" ]] && continue
+                # Check if this slug is still in the current config
+                if ! echo "$config_content" | jq -e --arg s "$slug" '.addons | has($s)' > /dev/null 2>&1; then
+                    bashio::log.info "[${slug}] Addon removed from config"
+                    if bashio::var.true "$dry_run"; then
+                        bashio::log.info "[DRY-RUN] Would uninstall: ${slug}"
+                    else
+                        if bashio::addon.uninstall "$slug"; then
+                            bashio::log.info "[${slug}] Successfully uninstalled"
+                        else
+                            bashio::log.error "[${slug}] Failed to uninstall"
+                        fi
+                    fi
+                fi
+            done < <(echo "$previous_addons" | jq -r '.[]? // empty')
+
+            # Save current state for next iteration
+            if ! bashio::var.true "$dry_run"; then
+                addman::state.save_managed_addons "$current_addon_slugs"
+            fi
+        fi
 
         sleep "${sleep}"
     done
