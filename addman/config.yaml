@@ -7,7 +7,6 @@ url: https://github.com/dadav/hass-addon-addman/tree/main/addman
 init: false
 hassio_api: true
 hassio_role: manager
-codenotary: dadav@protonmail.com
 panel_icon: home-floor-a
 map:
   - type: addons
