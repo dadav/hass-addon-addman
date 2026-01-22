@@ -1,6 +1,6 @@
 ---
 name: AddMan
-version: 1.6.0
+version: 2.0.0
 slug: addman
 description: AddMan installs and configures add-ons.
 url: https://github.com/dadav/hass-addon-addman/tree/main/addman
@@ -19,9 +19,6 @@ map:
 arch:
   - aarch64
   - amd64
-  - armhf
-  - armv7
-  - i386
 options:
   check_interval: 600
   check_updates_x_iterations: 6

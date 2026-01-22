@@ -79,7 +79,7 @@ docker build -t addman-local -f addman/Dockerfile addman/
 # Triggered on changes to: build.yaml, config.yaml, Dockerfile, rootfs/
 ```
 
-**Supported architectures:** aarch64, amd64, armhf, armv7, i386
+**Supported architectures:** aarch64, amd64 (64-bit only)
 
 ### Testing
 
@@ -172,7 +172,7 @@ Enforces:
 
 **Process:**
 1. Detect changed add-ons
-2. Build for all 5 architectures in parallel
+2. Build for 2 architectures (aarch64, amd64) in parallel using `home-assistant/builder@2025.11.0`
 3. Run with `--test` flag on PRs
 4. Push to `ghcr.io/dadav/{arch}-addon-addman` on main branch
 5. Sign with Codenotary (`CAS_API_KEY` secret required)
@@ -252,10 +252,12 @@ Secrets use standard YAML anchors/aliases:
 ### Multi-Architecture Considerations
 
 When modifying shell scripts or dependencies:
-- Test impact across all 5 architectures
+- Test impact across both architectures (aarch64, amd64)
 - Bash features must work on Alpine Linux (busybox)
 - Use POSIX-compatible commands where possible
 - Dependencies installed via Alpine APK packages (without version pins to ensure cross-architecture compatibility)
+
+**Note:** As of version 2.0.0, only 64-bit architectures are supported. 32-bit architectures (armhf, armv7, i386) were dropped to align with Home Assistant's platform direction.
 
 ### Versioning and Releases
 
@@ -307,18 +309,19 @@ When modifying shell scripts or dependencies:
 - `yq-go`: YAML processor (used for config parsing and merging)
 - `bashio`: Home Assistant bash library (from base image)
 
-**Base image:** `ghcr.io/hassio-addons/base:18.2.1`
-- Last version supporting all 5 architectures (aarch64, amd64, armhf, armv7, i386)
-- v19.0.0+ dropped support for 32-bit architectures
+**Base image:** `ghcr.io/hassio-addons/base:19.0.0`
+- Supports 64-bit architectures only (aarch64, amd64)
 - Provides Home Assistant integration
 - Includes S6 overlay for process supervision
 - Includes `bashio` library
 
 ## Recent Improvements (Latest Version)
 
+### Breaking Changes
+- **Dropped 32-bit architecture support**: Removed support for armhf, armv7, and i386 to align with Home Assistant's platform direction. Now supports only 64-bit architectures (aarch64, amd64). Updated to base image v19.0.0 and builder action 2025.11.0.
+
 ### Bug Fixes
-- **Fixed multi-architecture build failures**: Base image v19.0.0 dropped support for armhf, armv7, and i386. Downgraded to v18.2.1 (last version supporting all 5 architectures) to maintain backward compatibility for users on 32-bit systems
-- **Removed Alpine package version pins**: Removed version pins from Dockerfile to ensure package availability across all architectures
+- **Removed Alpine package version pins**: Removed version pins from Dockerfile to ensure package availability across architectures
 - **Fixed critical bash syntax error** (line 256): Corrected string indexing from `${value[0]}` to `${value:0:1}`
 - **Added comprehensive error handling**: YAML parsing, addon operations (install/start/restart) now properly handle failures
 - **Fixed word splitting vulnerability**: Converted all `for x in $(...)` loops to safe `while IFS= read -r` loops

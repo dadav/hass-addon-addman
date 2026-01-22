@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-01-22
+
+### Breaking Changes
+
+- Dropped support for 32-bit architectures (armhf, armv7, i386)
+- Now only supports 64-bit architectures: aarch64 and amd64
+- Updated to Home Assistant base image v19.0.0
+- Updated to builder action 2025.11.0
+
+### Changed
+
+- Removed Alpine package version pins for better cross-architecture compatibility
+
 ## [1.5.7] - 2023-10-26
 
 ### Fixed
