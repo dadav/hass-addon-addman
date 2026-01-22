@@ -307,7 +307,9 @@ When modifying shell scripts or dependencies:
 - `yq-go`: YAML processor (used for config parsing and merging)
 - `bashio`: Home Assistant bash library (from base image)
 
-**Base image:** `ghcr.io/hassio-addons/base:17.2.5`
+**Base image:** `ghcr.io/hassio-addons/base:18.2.1`
+- Last version supporting all 5 architectures (aarch64, amd64, armhf, armv7, i386)
+- v19.0.0+ dropped support for 32-bit architectures
 - Provides Home Assistant integration
 - Includes S6 overlay for process supervision
 - Includes `bashio` library
@@ -315,7 +317,8 @@ When modifying shell scripts or dependencies:
 ## Recent Improvements (Latest Version)
 
 ### Bug Fixes
-- **Fixed multi-architecture build failures**: Removed Alpine package version pins from Dockerfile to ensure compatibility across all architectures with base image v19.0.0
+- **Fixed multi-architecture build failures**: Base image v19.0.0 dropped support for armhf, armv7, and i386. Downgraded to v18.2.1 (last version supporting all 5 architectures) to maintain backward compatibility for users on 32-bit systems
+- **Removed Alpine package version pins**: Removed version pins from Dockerfile to ensure package availability across all architectures
 - **Fixed critical bash syntax error** (line 256): Corrected string indexing from `${value[0]}` to `${value:0:1}`
 - **Added comprehensive error handling**: YAML parsing, addon operations (install/start/restart) now properly handle failures
 - **Fixed word splitting vulnerability**: Converted all `for x in $(...)` loops to safe `while IFS= read -r` loops
