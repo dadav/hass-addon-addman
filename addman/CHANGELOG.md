@@ -10,7 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed jq parse errors ("Invalid numeric literal") caused by bashio library incompatibility with jq 1.8.1 in base image 19.0.0
-- Added error suppression and retry logic for bashio cache operations that fail due to jq compatibility issues
+- Implemented global stderr filter to suppress jq errors from bashio library cache operations
+- Replaced bashio::cache with simple file-based caching to avoid jq 1.8.1 compatibility issues
 - Added safe wrapper function `addman::addon.is_installed()` with retry logic for addon status checks
 - Improved error handling for supervisor API calls during startup
 

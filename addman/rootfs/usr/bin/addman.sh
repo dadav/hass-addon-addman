@@ -104,20 +104,23 @@ function addman::addon.validate_options() {
 # ------------------------------------------------------------------------------
 function addman::addons.fetch_repositories() {
     local response
+    local cache_file="/tmp/addman_repositories.cache"
 
     bashio::log.trace "${FUNCNAME[0]}"
 
-    if bashio::cache.exists ".store.repositories" 2>/dev/null; then
-        if response=$(bashio::cache.get ".store.repositories" 2>/dev/null); then
+    # Use simple file-based cache instead of bashio::cache (which has jq 1.8.1 issues)
+    if [[ -f "$cache_file" ]]; then
+        response=$(cat "$cache_file" 2>/dev/null || echo "")
+        if [[ -n "$response" ]]; then
             printf "%s" "${response}"
             return "${__BASHIO_EXIT_OK}"
         fi
     fi
 
-    # Suppress jq errors from bashio library (known issue with jq 1.8.1 in base image 19.0.0)
-    if response=$(bashio::api.supervisor GET "/store/repositories" false 2>&1); then
-        # Try to cache, but ignore errors (bashio::cache.set has jq compatibility issues)
-        bashio::cache.set ".store.repositories" "${response}" 2>/dev/null || true
+    # Fetch from API (jq errors are filtered globally)
+    if response=$(bashio::api.supervisor GET "/store/repositories" false); then
+        # Cache to simple file (avoid bashio::cache which has jq compatibility issues)
+        echo "$response" > "$cache_file" 2>/dev/null || true
         printf "%s" "${response}"
         return "${__BASHIO_EXIT_OK}"
     else
@@ -190,7 +193,7 @@ addman::addon.is_installed() {
     bashio::log.trace "${FUNCNAME[0]}:" "$@"
 
     while [[ $attempt -le $retries ]]; do
-        # Redirect stderr to suppress jq errors that we'll handle gracefully
+        # Call bashio function (jq errors are filtered globally)
         if result=$(bashio::addons.installed "$slug" 2>&1); then
             # Check if result is a valid boolean string
             if [[ "$result" == "true" ]] || [[ "$result" == "false" ]]; then
@@ -199,7 +202,7 @@ addman::addon.is_installed() {
             fi
         fi
 
-        # If we got a jq error or invalid result, retry after a delay
+        # If we got an error or invalid result, retry after a delay
         bashio::log.trace "[${slug}] Addon status check failed (attempt $attempt/$retries), retrying..."
         sleep 2
         attempt=$((attempt + 1))
@@ -232,7 +235,8 @@ addman::addon.verify_running() {
 
     while [[ $attempt -le $max_attempts ]]; do
         local state
-        state=$(bashio::addon.state "$slug" 2>&1)
+        # Get addon state (jq errors are filtered globally)
+        state=$(bashio::addon.state "$slug")
 
         if [[ "$state" == "started" ]]; then
             bashio::log.debug "[${slug}] Addon is running"
@@ -296,6 +300,14 @@ main() {
     local iterations=0
 
     bashio::log.trace "${FUNCNAME[0]}"
+
+    # Globally suppress jq errors from bashio library (jq 1.8.1 compatibility issue in base image 19.0.0)
+    # Save original stderr, then redirect stderr through a filter that removes jq parse errors
+    exec 3>&2
+    exec 2> >(grep -v "jq: parse error: Invalid numeric literal" >&3)
+
+    # Ensure stderr filter process is cleaned up on exit
+    trap 'exec 2>&3; exec 3>&-' EXIT
 
     watch_config_changes=$(bashio::config 'watch_config_changes')
     config_file=$(bashio::config 'config_file')
@@ -404,13 +416,15 @@ main() {
         done < <(echo "$config_content" | jq -r '.repositories[]? // empty')
 
         if bashio::var.true "$repository_changed"; then
-            # Invalidate repository cache when repositories change
-            bashio::cache.flush ".store.repositories" 2>/dev/null || true
+            # Invalidate repository cache when repositories change (use simple file-based cache)
+            rm -f /tmp/addman_repositories.cache 2>/dev/null || true
             bashio::log.info "Repositories have changed. Refreshing add-ons."
-            bashio::addons.reload 2>/dev/null || bashio::log.warning "Failed to reload addons"
+            # Call reload (jq errors from bashio cache are filtered globally)
+            bashio::addons.reload || bashio::log.warning "Failed to reload addons"
         elif [[ $check_updates_x_iterations -gt 0 && $(( iterations % check_updates_x_iterations)) -eq 0 ]]; then
             bashio::log.info "This is the ${iterations}. iteration, time to check for updates."
-            bashio::addons.reload 2>/dev/null || bashio::log.warning "Failed to reload addons"
+            # Call reload (jq errors from bashio cache are filtered globally)
+            bashio::addons.reload || bashio::log.warning "Failed to reload addons"
         fi
 
         bashio::log.trace "Start addon iteration"
@@ -455,7 +469,8 @@ main() {
 
             if echo "$addon_settings" | jq -e '.options' >/dev/null 2>&1; then
                 local current_options
-                current_options=$(bashio::addon.options "$slug" 2>/dev/null || echo "{}")
+                # Get current options (jq errors are filtered globally)
+                current_options=$(bashio::addon.options "$slug" || echo "{}")
 
                 addon_options=$(echo "$addon_settings" | jq '.options')
                 bashio::log.trace "[${slug}] Found these options $addon_options"
