@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- Fixed `bashio::jq.exists` function calls to use direct `jq -e` for compatibility with base image v19.0.0
+- Fixed `bashio::jq.exists` and `bashio::jq` function calls to use direct `jq` commands for compatibility with base image v19.0.0
 
 ### Changed
 

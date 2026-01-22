@@ -79,7 +79,7 @@ function addman::addon.validate_options() {
 
     response=$(bashio::api.supervisor POST "/addons/${slug}/options/validate" "$data")
 
-    if bashio::var.false "$(bashio::jq "${response}" ".valid")"; then
+    if bashio::var.false "$(echo "${response}" | jq -r '.valid')"; then
         bashio::log.trace "response: ${response}"
         return "${__BASHIO_EXIT_NOK}"
     fi
@@ -348,7 +348,7 @@ main() {
                 addman::addons.add_repository "$repo"
             fi
             repository_changed="true"
-        done < <(bashio::jq "$config_content" -r ".repositories[]? // empty")
+        done < <(echo "$config_content" | jq -r '.repositories[]? // empty')
 
         if bashio::var.true "$repository_changed"; then
             # Invalidate repository cache when repositories change
@@ -382,29 +382,29 @@ main() {
             local addon_options
             local addon_changed="false"
 
-            addon_settings=$(bashio::jq "$config_content" ".addons.\"${slug}\"")
+            addon_settings=$(echo "$config_content" | jq ".addons.\"${slug}\"")
 
             if echo "$addon_settings" | jq -e '.boot' >/dev/null 2>&1; then
-                bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"
+                bashio::addon.boot "$slug" "$(echo "$addon_settings" | jq -r '.boot')"
             fi
 
             if echo "$addon_settings" | jq -e '.auto_update' >/dev/null 2>&1; then
-                bashio::addon.auto_update "$slug" "$(bashio::jq "$addon_settings" ".auto_update")"
+                bashio::addon.auto_update "$slug" "$(echo "$addon_settings" | jq -r '.auto_update')"
             fi
 
             if echo "$addon_settings" | jq -e '.watchdog' >/dev/null 2>&1; then
-                bashio::addon.watchdog "$slug" "$(bashio::jq "$addon_settings" ".watchdog")"
+                bashio::addon.watchdog "$slug" "$(echo "$addon_settings" | jq -r '.watchdog')"
             fi
 
             if echo "$addon_settings" | jq -e '.ingress_panel' >/dev/null 2>&1; then
-                addman::addon.ingress_panel "$slug" "$(bashio::jq "$addon_settings" ".ingress_panel")"
+                addman::addon.ingress_panel "$slug" "$(echo "$addon_settings" | jq -r '.ingress_panel')"
             fi
 
             if echo "$addon_settings" | jq -e '.options' >/dev/null 2>&1; then
                 local current_options
                 current_options=$(bashio::addon.options "$slug")
 
-                addon_options=$(bashio::jq "$addon_settings" ".options")
+                addon_options=$(echo "$addon_settings" | jq '.options')
                 bashio::log.trace "[${slug}] Found these options $addon_options"
 
                 if addman::addon.validate_options "$addon_options" "$slug"; then
@@ -412,8 +412,8 @@ main() {
                         [[ -z "$key" ]] && continue  # Skip empty lines
                         bashio::log.trace "[${slug}] Getting value of $key"
                         local value
-                        value=$(bashio::jq "$addon_options" ".\"${key}\"")
-                        if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
+                        value=$(echo "$addon_options" | jq ".\"${key}\"")
+                        if ! bashio::var.equals "$(echo "$current_options" | jq ".\"${key}\"")" "$value"; then
                             if bashio::var.true "$dry_run"; then
                                 bashio::log.info "[DRY-RUN] Would set ${slug}.${key} to $value"
                             else
@@ -426,7 +426,7 @@ main() {
                             fi
                             addon_changed="true"
                         fi
-                    done < <(bashio::jq "$addon_options" -r "keys[]? // empty")
+                    done < <(echo "$addon_options" | jq -r 'keys[]? // empty')
                 else
                     bashio::log.error "[${slug}] Invalid options detected. Skip."
                     continue
@@ -435,11 +435,11 @@ main() {
 
             if echo "$addon_settings" | jq -e '.start' >/dev/null 2>&1; then
                 bashio::log.warning "[${slug}] start is now called auto_start and will be removed in the future."
-                addon_settings=$(bashio::jq "$addon_settings" ".auto_start = .start")
+                addon_settings=$(echo "$addon_settings" | jq '.auto_start = .start')
             fi
 
             if echo "$addon_settings" | jq -e '.auto_start' >/dev/null 2>&1; then
-                if bashio::var.true "$(bashio::jq "$addon_settings" ".auto_start")"; then
+                if bashio::var.true "$(echo "$addon_settings" | jq -r '.auto_start')"; then
                     if ! bashio::var.equals "$(bashio::addon.state "$slug")" "started"; then
                         if bashio::var.true "$dry_run"; then
                             bashio::log.info "[DRY-RUN] Would start addon: ${slug}"
@@ -456,7 +456,7 @@ main() {
                         fi
                     elif bashio::var.true "$addon_changed"; then
                         if ! echo "$addon_settings" | jq -e '.auto_restart' >/dev/null 2>&1 || \
-                             bashio::var.true "$(bashio::jq "$addon_settings" ".auto_restart")"; then
+                             bashio::var.true "$(echo "$addon_settings" | jq -r '.auto_restart')"; then
                                 if bashio::var.true "$dry_run"; then
                                     bashio::log.info "[DRY-RUN] Would restart addon: ${slug}"
                                 else
@@ -474,7 +474,7 @@ main() {
                     fi
                 fi
             fi
-        done < <(bashio::jq "$config_content" -r ".addons | keys[]? // empty")
+        done < <(echo "$config_content" | jq -r '.addons | keys[]? // empty')
 
         # Handle addon uninstall if auto_uninstall is enabled
         if bashio::var.true "$auto_uninstall"; then

@@ -321,7 +321,7 @@ When modifying shell scripts or dependencies:
 - **Dropped 32-bit architecture support**: Removed support for armhf, armv7, and i386 to align with Home Assistant's platform direction. Now supports only 64-bit architectures (aarch64, amd64). Updated to base image v19.0.0 and builder action 2025.11.0.
 
 ### Bug Fixes
-- **Fixed bashio::jq.exists compatibility**: Replaced all `bashio::jq.exists` calls with direct `jq -e` for compatibility with base image v19.0.0
+- **Fixed bashio jq compatibility**: Replaced all `bashio::jq.exists` and `bashio::jq` calls with direct `jq` commands for compatibility with base image v19.0.0
 - **Removed Alpine package version pins**: Removed version pins from Dockerfile to ensure package availability across architectures
 - **Fixed critical bash syntax error** (line 256): Corrected string indexing from `${value[0]}` to `${value:0:1}`
 - **Added comprehensive error handling**: YAML parsing, addon operations (install/start/restart) now properly handle failures
