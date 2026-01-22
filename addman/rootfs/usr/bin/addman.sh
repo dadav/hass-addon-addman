@@ -38,13 +38,14 @@ function addman::yaml_to_json() {
             bashio::log.warning "Secrets file has permissive permissions ($perms). Recommend chmod 600 ${path}.secrets"
         fi
         bashio::log.trace "Reading the secrets file (${path}.secrets)."
-        # For-loop is need to add a newline after the secret file
-        if ! result=$(yq -M -N -oj "explode(.) | select(document_index == 1)" <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done) 2>&1); then
+        # Merge secrets (document 0) with main config (document 1)
+        # Use eval-all to merge both documents, then explode aliases
+        if ! result=$(yq -M -N -oj 'eval-all ". as $item ireduce ({}; . * $item) | explode(.)' <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done) 2>&1); then
             bashio::log.error "Failed to parse YAML with secrets: $result"
             return "${__BASHIO_EXIT_NOK}"
         fi
     else
-        if ! result=$(yq -M -N -oj "." "${path}" 2>&1); then
+        if ! result=$(yq -M -N -oj "explode(.)" "${path}" 2>&1); then
             bashio::log.error "Failed to parse YAML: $result"
             return "${__BASHIO_EXIT_NOK}"
         fi
@@ -345,15 +346,27 @@ main() {
     config_hash=$(echo "$config_content" | sha256sum | cut -d' ' -f1)
     bashio::log.trace "Config loaded successfully (hash: ${config_hash:0:8})"
 
-    # Validate configuration structure
-    if ! echo "$config_content" | jq -e '.repositories' >/dev/null 2>&1 && ! echo "$config_content" | jq -e '.addons' >/dev/null 2>&1; then
-        bashio::log.warning "Configuration has no repositories or addons defined - nothing to manage"
-    fi
-
+    # Debug: Show addon keys found in config
     if echo "$config_content" | jq -e '.addons' >/dev/null 2>&1; then
         local addon_count
         addon_count=$(echo "$config_content" | jq -r '.addons | length')
         bashio::log.info "Found ${addon_count} addon(s) to manage"
+
+        # Debug: List addon slugs
+        local addon_slugs
+        addon_slugs=$(echo "$config_content" | jq -r '.addons | keys[]? // empty' | tr '\n' ' ')
+        if [[ -n "$addon_slugs" ]]; then
+            bashio::log.debug "Addon slugs: ${addon_slugs}"
+        else
+            bashio::log.warning "No addon slugs found in configuration!"
+            bashio::log.debug "Config structure: $(echo "$config_content" | jq -c 'keys')"
+        fi
+    else
+        bashio::log.warning "Configuration has no addons section defined"
+    fi
+
+    if ! echo "$config_content" | jq -e '.repositories' >/dev/null 2>&1 && ! echo "$config_content" | jq -e '.addons' >/dev/null 2>&1; then
+        bashio::log.warning "Configuration has no repositories or addons defined - nothing to manage"
     fi
 
     if echo "$config_content" | jq -e '.repositories' >/dev/null 2>&1; then
