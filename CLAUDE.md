@@ -255,7 +255,7 @@ When modifying shell scripts or dependencies:
 - Test impact across all 5 architectures
 - Bash features must work on Alpine Linux (busybox)
 - Use POSIX-compatible commands where possible
-- Dependencies installed via Alpine APK packages
+- Dependencies installed via Alpine APK packages (without version pins to ensure cross-architecture compatibility)
 
 ### Versioning and Releases
 
@@ -315,6 +315,7 @@ When modifying shell scripts or dependencies:
 ## Recent Improvements (Latest Version)
 
 ### Bug Fixes
+- **Fixed multi-architecture build failures**: Removed Alpine package version pins from Dockerfile to ensure compatibility across all architectures with base image v19.0.0
 - **Fixed critical bash syntax error** (line 256): Corrected string indexing from `${value[0]}` to `${value:0:1}`
 - **Added comprehensive error handling**: YAML parsing, addon operations (install/start/restart) now properly handle failures
 - **Fixed word splitting vulnerability**: Converted all `for x in $(...)` loops to safe `while IFS= read -r` loops
