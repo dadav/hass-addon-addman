@@ -40,7 +40,7 @@ function addman::yaml_to_json() {
         bashio::log.trace "Reading the secrets file (${path}.secrets)."
         # Merge secrets (document 0) with main config (document 1)
         # Use eval-all to merge both documents, then explode aliases
-        if ! result=$(yq -M -N -oj 'eval-all ". as $item ireduce ({}; . * $item) | explode(.)' <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done) 2>&1); then
+        if ! result=$(yq -M -N -oj eval-all '. as $item ireduce ({}; . * $item) | explode(.)' "${path}.secrets" "${path}" 2>&1); then
             bashio::log.error "Failed to parse YAML with secrets: $result"
             return "${__BASHIO_EXIT_NOK}"
         fi
