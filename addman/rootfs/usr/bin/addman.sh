@@ -38,9 +38,9 @@ function addman::yaml_to_json() {
             bashio::log.warning "Secrets file has permissive permissions ($perms). Recommend chmod 600 ${path}.secrets"
         fi
         bashio::log.trace "Reading the secrets file (${path}.secrets)."
-        # Merge secrets (document 0) with main config (document 1)
-        # Use eval-all to merge both documents, then explode aliases
-        if ! result=$(yq -M -N -oj eval-all '. as $item ireduce ({}; . * $item) | explode(.)' "${path}.secrets" "${path}" 2>&1); then
+        # Concatenate secrets and main config into single YAML stream, then merge documents
+        # This allows anchors from secrets to be referenced in main config
+        if ! result=$(cat "${path}.secrets" <(echo) "${path}" <(echo) | yq -M -N -oj eval-all '. as $item ireduce ({}; . * $item) | explode(.)' 2>&1); then
             bashio::log.error "Failed to parse YAML with secrets: $result"
             return "${__BASHIO_EXIT_NOK}"
         fi
