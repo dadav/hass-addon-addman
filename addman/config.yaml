@@ -1,6 +1,6 @@
 ---
 name: AddMan
-version: 2.0.7
+version: 2.0.8
 slug: addman
 description: AddMan installs and configures add-ons.
 url: https://github.com/dadav/hass-addon-addman/tree/main/addman
