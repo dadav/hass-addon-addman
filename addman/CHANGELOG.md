@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated to Home Assistant base image v19.0.0
 - Updated to builder action 2025.11.0
 
+### Fixed
+
+- Fixed `bashio::jq.exists` function calls to use direct `jq -e` for compatibility with base image v19.0.0
+
 ### Changed
 
 - Removed Alpine package version pins for better cross-architecture compatibility
