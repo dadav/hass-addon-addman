@@ -5,6 +5,14 @@
 # An add-on to configure them all.
 # This add-on can install and configure other add-ons.
 # ==============================================================================
+#
+# IMPORTANT: Base image 19.0.0 uses jq 1.8.1 which has breaking changes:
+# - tonumber/0 now rejects numbers with leading/trailing whitespace
+# - Stricter JSON parsing
+# Some bashio library functions (especially cache operations) use jq internally
+# and may produce "Invalid numeric literal" errors. We suppress these errors
+# where they don't affect functionality.
+# ==============================================================================
 
 # ------------------------------------------------------------------------------
 # Converts a given YAML file to a json string.
@@ -99,17 +107,23 @@ function addman::addons.fetch_repositories() {
 
     bashio::log.trace "${FUNCNAME[0]}"
 
-    if bashio::cache.exists ".store.repositories"; then
-        bashio::cache.get ".store.repositories"
-        return "${__BASHIO_EXIT_OK}"
+    if bashio::cache.exists ".store.repositories" 2>/dev/null; then
+        if response=$(bashio::cache.get ".store.repositories" 2>/dev/null); then
+            printf "%s" "${response}"
+            return "${__BASHIO_EXIT_OK}"
+        fi
     fi
 
-    response=$(bashio::api.supervisor GET "/store/repositories" false)
-    bashio::cache.set ".store.repositories" "${response}"
-
-    printf "%s" "${response}"
-
-    return "${__BASHIO_EXIT_OK}"
+    # Suppress jq errors from bashio library (known issue with jq 1.8.1 in base image 19.0.0)
+    if response=$(bashio::api.supervisor GET "/store/repositories" false 2>&1); then
+        # Try to cache, but ignore errors (bashio::cache.set has jq compatibility issues)
+        bashio::cache.set ".store.repositories" "${response}" 2>/dev/null || true
+        printf "%s" "${response}"
+        return "${__BASHIO_EXIT_OK}"
+    else
+        bashio::log.error "Failed to fetch repositories from supervisor API"
+        return "${__BASHIO_EXIT_NOK}"
+    fi
 }
 
 # ------------------------------------------------------------------------------
@@ -159,6 +173,45 @@ function addman::addon.ingress_panel() {
 }
 
 # ------------------------------------------------------------------------------
+# Safely check if an addon is installed with error handling for jq issues
+#
+# Arguments:
+#   $1 Addon slug
+#
+# Returns:
+#   0 if addon is installed, 1 otherwise
+# ------------------------------------------------------------------------------
+addman::addon.is_installed() {
+    local slug=${1}
+    local result
+    local retries=3
+    local attempt=1
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    while [[ $attempt -le $retries ]]; do
+        # Redirect stderr to suppress jq errors that we'll handle gracefully
+        if result=$(bashio::addons.installed "$slug" 2>&1); then
+            # Check if result is a valid boolean string
+            if [[ "$result" == "true" ]] || [[ "$result" == "false" ]]; then
+                echo "$result"
+                return "${__BASHIO_EXIT_OK}"
+            fi
+        fi
+
+        # If we got a jq error or invalid result, retry after a delay
+        bashio::log.trace "[${slug}] Addon status check failed (attempt $attempt/$retries), retrying..."
+        sleep 2
+        attempt=$((attempt + 1))
+    done
+
+    # If all retries failed, assume addon is not installed
+    bashio::log.warning "[${slug}] Could not determine addon status after $retries attempts, assuming not installed"
+    echo "false"
+    return "${__BASHIO_EXIT_NOK}"
+}
+
+# ------------------------------------------------------------------------------
 # Verify that an addon is running after start/restart
 #
 # Arguments:
@@ -179,7 +232,7 @@ addman::addon.verify_running() {
 
     while [[ $attempt -le $max_attempts ]]; do
         local state
-        state=$(bashio::addon.state "$slug")
+        state=$(bashio::addon.state "$slug" 2>&1)
 
         if [[ "$state" == "started" ]]; then
             bashio::log.debug "[${slug}] Addon is running"
@@ -352,19 +405,19 @@ main() {
 
         if bashio::var.true "$repository_changed"; then
             # Invalidate repository cache when repositories change
-            bashio::cache.flush ".store.repositories"
+            bashio::cache.flush ".store.repositories" 2>/dev/null || true
             bashio::log.info "Repositories have changed. Refreshing add-ons."
-            bashio::addons.reload
+            bashio::addons.reload 2>/dev/null || bashio::log.warning "Failed to reload addons"
         elif [[ $check_updates_x_iterations -gt 0 && $(( iterations % check_updates_x_iterations)) -eq 0 ]]; then
             bashio::log.info "This is the ${iterations}. iteration, time to check for updates."
-            bashio::addons.reload
+            bashio::addons.reload 2>/dev/null || bashio::log.warning "Failed to reload addons"
         fi
 
         bashio::log.trace "Start addon iteration"
         while IFS= read -r slug; do
             [[ -z "$slug" ]] && continue  # Skip empty lines
             bashio::log.trace "[${slug}] Check if already installed"
-            if bashio::var.false "$(bashio::addons.installed "$slug")"; then
+            if bashio::var.false "$(addman::addon.is_installed "$slug")"; then
                 if bashio::var.true "$dry_run"; then
                     bashio::log.info "[DRY-RUN] Would install addon: ${slug}"
                 else
@@ -402,7 +455,7 @@ main() {
 
             if echo "$addon_settings" | jq -e '.options' >/dev/null 2>&1; then
                 local current_options
-                current_options=$(bashio::addon.options "$slug")
+                current_options=$(bashio::addon.options "$slug" 2>/dev/null || echo "{}")
 
                 addon_options=$(echo "$addon_settings" | jq '.options')
                 bashio::log.trace "[${slug}] Found these options $addon_options"

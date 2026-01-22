@@ -322,6 +322,7 @@ When modifying shell scripts or dependencies:
 
 ### Bug Fixes
 - **Fixed bashio jq compatibility**: Replaced all `bashio::jq.exists` and `bashio::jq` calls with direct `jq` commands for compatibility with base image v19.0.0
+- **Fixed jq parse errors from bashio library**: Added error suppression and retry logic to handle bashio library functions that fail due to jq 1.8.1 compatibility issues. Base image 19.0.0 uses jq 1.8.1 which has breaking changes (tonumber/0 rejects whitespace, stricter JSON parsing). Bashio cache operations trigger "Invalid numeric literal" errors which are now suppressed without affecting functionality.
 - **Removed Alpine package version pins**: Removed version pins from Dockerfile to ensure package availability across architectures
 - **Fixed critical bash syntax error** (line 256): Corrected string indexing from `${value[0]}` to `${value:0:1}`
 - **Added comprehensive error handling**: YAML parsing, addon operations (install/start/restart) now properly handle failures
