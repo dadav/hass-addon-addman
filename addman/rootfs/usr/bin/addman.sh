@@ -24,9 +24,9 @@ function addman::yaml_to_json() {
     if bashio::fs.file_exists "${path}.secrets"; then
         bashio::log.trace "Reading the secrets file (${path}.secrets)."
         # For-loop is need to add a newline after the secret file
-        yq -M -N -oj "explode(.) | select(document_index == 1)" <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done)
+        yq -M -N -oj --yaml-fix-merge-anchor-to-spec "explode(.) | select(document_index == 1)" <(for f in "${path}.secrets" "${path}"; do cat "$f"; echo; done)
     else
-        yq -M -N -oj "." "${path}"
+        yq -M -N -oj --yaml-fix-merge-anchor-to-spec "." "${path}"
     fi
 }
 
