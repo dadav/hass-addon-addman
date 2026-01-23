@@ -7,8 +7,8 @@ COPY rootfs /
 
 # Setup base
 RUN apk add --no-cache --update-cache \
-    coreutils=9.1-r0 \
-    yq=4.25.1-r5
+    coreutils \
+    yq
 
 # Build arguments
 ARG BUILD_ARCH
