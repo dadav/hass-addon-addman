@@ -1,0 +1,18 @@
+---
+# Smoke-test scenario: one brand-new repository and one not-yet-installed
+# add-on. Drives the full reconcile path: add repo -> reload -> install ->
+# configure (boot/watchdog/auto_update/ingress_panel) -> validate+set options
+# -> start.
+repositories:
+  - https://github.com/example/test-repo
+
+addons:
+  test_addon:
+    auto_start: true
+    auto_restart: true
+    boot: auto
+    watchdog: true
+    auto_update: true
+    ingress_panel: false
+    options:
+      some_key: some_value
