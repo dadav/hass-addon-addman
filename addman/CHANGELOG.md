@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.15]
+
+### Changed
+
+- Log the concrete reason from the Supervisor validate API at INFO level when an add-on's options are invalid, so it is visible without enabling debug logging
+
 ## [1.5.7] - 2023-10-26
 
 ### Fixed

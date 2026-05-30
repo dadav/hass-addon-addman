@@ -65,6 +65,7 @@ function addman::addon.validate_options() {
 
     if bashio::var.false "$(bashio::jq "${response}" ".valid")"; then
         bashio::log.trace "response: ${response}"
+        bashio::log.info "[${slug}] Invalid options: $(bashio::jq "${response}" ".message // \"unknown error\"")"
         return "${__BASHIO_EXIT_NOK}"
     fi
 
