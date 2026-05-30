@@ -51,6 +51,19 @@ ADDON_INFO = {
     "ingress_panel": False,
 }
 
+# An already-installed add-on (version set). Used to drive the `state: absent`
+# removal path: AddMan sees it installed and must POST .../uninstall.
+ADDON_INFO_INSTALLED = {
+    "state": "started",
+    "options": {},
+    "version": "1",
+    "version_latest": "1",
+    "boot": "auto",
+    "watchdog": False,
+    "auto_update": False,
+    "ingress_panel": False,
+}
+
 
 def _ok(data):
     return {"result": "ok", "data": data}
@@ -66,6 +79,9 @@ def response_for(method, path):
 
     if method == "GET" and path == "/store/repositories":
         return _ok([])
+
+    if method == "GET" and path == "/addons/absent_addon/info":
+        return _ok(ADDON_INFO_INSTALLED)
 
     if method == "GET" and re.search(r"/addons/[^/]+/info$", path):
         return _ok(ADDON_INFO)

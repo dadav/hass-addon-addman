@@ -1,0 +1,48 @@
+---
+name: Bug report
+description: Something in AddMan isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! Please fill in the details below.
+        Tip: set `log_level: debug` on the AddMan add-on to get more detail.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you expect to happen, and what happened instead?
+      placeholder: AddMan did not install the add-on ...
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Your addman.yaml
+      description: The relevant part of your `addman.yaml` (redact any secrets).
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: AddMan logs
+      description: Relevant log output (debug level if possible).
+      render: shell
+    validations:
+      required: false
+  - type: input
+    id: version
+    attributes:
+      label: AddMan version
+      placeholder: 2.1.0
+    validations:
+      required: true
+  - type: input
+    id: arch
+    attributes:
+      label: Architecture
+      placeholder: aarch64 / amd64 / armv7 / armhf / i386
+    validations:
+      required: false

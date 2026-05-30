@@ -121,6 +121,26 @@ function addman::addons.add_repository() {
 }
 
 # ------------------------------------------------------------------------------
+# Uninstall an add-on (used for declarative removal via `state: absent`).
+#
+# Mirrors the direct Supervisor API pattern used by add_repository because
+# bashio does not ship an uninstall helper.
+#
+# Arguments:
+#   $1 Add-on slug
+# ------------------------------------------------------------------------------
+function addman::addon.uninstall() {
+    local slug=${1}
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    bashio::api.supervisor POST "/addons/${slug}/uninstall"
+    bashio::cache.flush_all
+
+    return "${__BASHIO_EXIT_OK}"
+}
+
+# ------------------------------------------------------------------------------
 # Returns the current ingress_panel setting of this add-on.
 #
 # Arguments:
@@ -211,18 +231,31 @@ main() {
 
         bashio::log.trace "Start addon iteration"
         for slug in $(bashio::jq "$config_content" ".addons | keys | .[]"); do
-            bashio::log.trace "[${slug}] Check if already installed"
-            if bashio::var.false "$(bashio::addons.installed "$slug")"; then
-                bashio::log.info "[${slug}] Installing add-on..."
-                bashio::addon.install "$slug"
-            fi
-
-            # Configure the addon
             local addon_settings
             local addon_options
             local addon_changed="false"
 
             addon_settings=$(bashio::jq "$config_content" ".addons.\"${slug}\"")
+
+            # Declarative removal: `state: absent` uninstalls a managed add-on.
+            # Anything else (or no `state` key) is treated as `present`.
+            if bashio::var.equals "$(bashio::jq "$addon_settings" ".state // \"present\"")" "absent"; then
+                if bashio::var.equals "$slug" "self"; then
+                    bashio::log.warning "[${slug}] Refusing to uninstall AddMan itself; ignoring 'state: absent'."
+                    continue
+                fi
+                if bashio::var.true "$(bashio::addons.installed "$slug")"; then
+                    bashio::log.info "[${slug}] state is 'absent'. Uninstalling add-on..."
+                    addman::addon.uninstall "$slug"
+                fi
+                continue
+            fi
+
+            bashio::log.trace "[${slug}] Check if already installed"
+            if bashio::var.false "$(bashio::addons.installed "$slug")"; then
+                bashio::log.info "[${slug}] Installing add-on..."
+                bashio::addon.install "$slug"
+            fi
 
             if bashio::jq.exists "$addon_settings" ".boot"; then
                 bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"

@@ -1,8 +1,8 @@
 ---
 name: AddMan
-version: 2.0.15
+version: 2.1.0
 slug: addman
-description: AddMan installs and configures add-ons.
+description: Declaratively install, configure and remove add-ons from a git-managed YAML file.
 url: https://github.com/dadav/hass-addon-addman/tree/main/addman
 init: false
 hassio_api: true
@@ -12,6 +12,9 @@ map:
 arch:
   - aarch64
   - amd64
+  - armhf
+  - armv7
+  - i386
 options:
   check_interval: 600
   check_updates_x_iterations: 6

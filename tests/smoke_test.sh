@@ -86,7 +86,8 @@ seen=0
 for _ in $(seq 1 60); do
     if grep -q '"POST".*"/store/repositories"' "${MOCK_LOG}" \
         && grep -q '/addons/test_addon/options/validate' "${MOCK_LOG}" \
-        && grep -q '/addons/test_addon/start' "${MOCK_LOG}"; then
+        && grep -q '/addons/test_addon/start' "${MOCK_LOG}" \
+        && grep -q '/addons/absent_addon/uninstall' "${MOCK_LOG}"; then
         seen=1
         break
     fi
@@ -108,6 +109,8 @@ grep -q '/addons/test_addon/options/validate' "${MOCK_LOG}" \
     || fail "AddMan did not validate test_addon options"
 grep -q '"/addons/test_addon/start"' "${MOCK_LOG}" \
     || fail "AddMan did not start test_addon"
+grep -q '"/addons/absent_addon/uninstall"' "${MOCK_LOG}" \
+    || fail "AddMan did not uninstall absent_addon (state: absent)"
 
 echo "Asserting container logs..."
 grep -qi 'Adding addon repository' "${CONTAINER_LOG}" \
@@ -116,6 +119,8 @@ grep -qi 'Installing add-on' "${CONTAINER_LOG}" \
     || fail "log missing 'Installing add-on'"
 grep -qi 'Starting add-on' "${CONTAINER_LOG}" \
     || fail "log missing 'Starting add-on'"
+grep -qi 'Uninstalling add-on' "${CONTAINER_LOG}" \
+    || fail "log missing 'Uninstalling add-on'"
 if grep -qiE 'crashed|fatal' "${CONTAINER_LOG}"; then
     fail "container reported a crash/fatal error"
 fi

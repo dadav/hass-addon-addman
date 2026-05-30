@@ -1,11 +1,46 @@
 # Home Assistant Community Add-on: AddMan
 
-AddMan is a simple add-on manager.
-
-Add-ons will be installed, configured and (re)started.
+AddMan is a declarative add-on manager: it reconciles your installed add-ons
+against a YAML file. Add-ons are installed, configured, (re)started and — when
+you ask for it — uninstalled.
 
 The main goal is to provide a simple way to manage add-ons via files
-managed by git.
+managed by git, so your whole add-on setup is version-controlled and
+reproducible.
+
+## Use cases
+
+- **Rebuild from scratch**: re-create a full Home Assistant add-on setup from a
+  single file instead of clicking through the UI from memory.
+- **Config as code**: keep `addman.yaml` in a git repo (e.g. via the `git-pull`
+  add-on) to get history, diffs, review and rollback of your add-on config.
+- **Keep instances consistent**: share one `addman.yaml` across multiple Home
+  Assistant instances.
+
+## Quick start
+
+1. Install and start AddMan (see [Installation](#installation)). On first start
+   it writes a default `/config/addman.yaml`.
+2. Edit `/config/addman.yaml` to describe the add-ons you want:
+
+   ```yaml
+   repositories:
+     - https://github.com/sabeechen/hassio-google-drive-backup
+
+   addons:
+     core_samba:
+       auto_start: true
+     cebe7a76_hassio_google_drive_backup:
+       auto_start: true
+       options:
+         days_between_backups: 3
+   ```
+
+3. Restart AddMan (or set `watch_config_changes: true` to pick up edits
+   automatically). Within `check_interval` seconds your add-ons are reconciled.
+
+> The `addons` key must use the add-on **slug**, not its display name. Find a
+> slug in the add-on's URL or via the Supervisor `GET /addons` API.
 
 ## Installation
 
@@ -83,6 +118,9 @@ addons:
   # It will be installed automatically.
   # In this case we will install addman itself. Therefore "self"...
   self:
+    # `state` is either `present` (default) or `absent`. Set it to `absent`
+    # to uninstall the add-on. AddMan never uninstalls itself.
+    state: present
     # If you set `auto_start` to true, it will be started automatically.
     auto_start: true
     # If you set `auto_restart` to false, it wont be restarted automatically.
@@ -153,6 +191,38 @@ addons:
 
 This is done with standard YAML anchoring and aliasing.
 
+### Removing add-ons
+
+To uninstall an add-on declaratively, set `state: absent`:
+
+```yaml
+addons:
+  core_ssh:
+    state: absent
+```
+
+On the next reconcile AddMan uninstalls the add-on if it is installed. This is
+**opt-in and explicit**: AddMan never removes an add-on just because it is
+missing from `addman.yaml`, so it is safe to run alongside add-ons you manage by
+hand. AddMan also refuses to uninstall itself (`self`).
+
+## Troubleshooting
+
+Set `log_level: debug` (or `trace`) on the AddMan add-on to get more detail.
+
+- **"Invalid options detected. Skip."** — the `options` you provided don't match
+  the add-on's schema. AddMan logs the concrete reason from the Supervisor at
+  INFO level. Check the add-on's own documentation for the expected fields and
+  types. AddMan validates before applying, so an invalid block never breaks the
+  add-on.
+- **Add-on not installing** — make sure the key is the add-on **slug** and that
+  the repository providing it is listed under `repositories`.
+- **Booleans become strings** — keep YAML booleans unquoted (`true`, not
+  `"true"`). AddMan preserves the type automatically.
+- **Edits not applied** — if `watch_config_changes` is `false`, restart AddMan
+  after editing `addman.yaml`. If `true`, changes apply within `check_interval`
+  seconds.
+
 ## Changelog
 
 This repository keeps a change log using [the conventions of keepachangelog.com][changelog].
@@ -179,7 +249,7 @@ The structure of this project is based on an example add-on from [Franck Nijhof]
 
 MIT License
 
-Copyright (c) 2019-2022 dadav
+Copyright (c) 2019-2026 dadav
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

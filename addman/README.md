@@ -12,6 +12,16 @@
 [armv7-shield]: https://img.shields.io/badge/armv7-yes-green.svg
 [i386-shield]: https://img.shields.io/badge/i386-yes-green.svg
 
-This add-on installs and configures repositories and add-ons.
+**Add-ons as code for Home Assistant.**
 
-Checkout the document page for more...
+AddMan continuously reconciles your add-ons against a declarative YAML file:
+it installs add-ons and their repositories, configures them (options, `boot`,
+`watchdog`, `auto_update`, `ingress_panel`, start/restart), and uninstalls the
+ones you mark `state: absent`. Every option is validated against the add-on's
+own schema before it is applied.
+
+Keep that YAML file in git (for example via the `git-pull` add-on) and your
+whole add-on setup becomes version-controlled, reproducible infrastructure.
+
+See the **Documentation** tab for configuration, secrets, examples and
+troubleshooting.
