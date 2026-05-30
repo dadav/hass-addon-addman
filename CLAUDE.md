@@ -38,6 +38,14 @@ docker build -t addman-test ./addman
 # - rootfs/
 ```
 
+**Architecture constraint (do not re-add 32-bit):** `home-assistant/builder`
+(currently `2025.11.0`) only accepts `--aarch64` and `--amd64`. Home Assistant
+dropped 32-bit support, so `armv7`/`armhf`/`i386` are NOT buildable — passing
+them fails CI with `Argument '--armv7' unknown`. Keep `arch:` in `config.yaml`,
+`build_from:` in `build.yaml`, the `arch` matrix in
+`.github/workflows/builder.yaml`, and the README/DOCS arch badges limited to
+`aarch64` + `amd64`. They must stay in sync.
+
 ### Development Workflow
 
 There are no local development commands. This add-on is developed and tested by:

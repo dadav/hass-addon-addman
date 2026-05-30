@@ -43,6 +43,6 @@ body:
     id: arch
     attributes:
       label: Architecture
-      placeholder: aarch64 / amd64 / armv7 / armhf / i386
+      placeholder: aarch64 / amd64
     validations:
       required: false

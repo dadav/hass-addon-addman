@@ -12,7 +12,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Declarative removal: set `state: absent` on an add-on to have AddMan uninstall it. Removal is explicit and opt-in; AddMan never uninstalls add-ons missing from the config, and never uninstalls itself.
-- Architecture support for `armhf`, `armv7` and `i386`, so 32-bit and older hardware (e.g. Raspberry Pi 3) can run AddMan.
 
 ### Changed
 
