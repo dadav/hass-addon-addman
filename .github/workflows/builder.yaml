@@ -30,7 +30,7 @@ jobs:
 
       - name: Find add-on directories
         id: addons
-        uses: home-assistant/actions/helpers/find-addons@master
+        uses: home-assistant/actions/helpers/find-addons@868e6cb4607727d764341a158d98872cd63fa658 # master
 
       - name: Get changed add-ons
         id: changed_addons
@@ -73,7 +73,7 @@ jobs:
 
       - name: Get information
         id: info
-        uses: home-assistant/actions/helpers/info@master
+        uses: home-assistant/actions/helpers/info@868e6cb4607727d764341a158d98872cd63fa658 # master
         with:
           path: "./${{ matrix.addon }}"
 
@@ -101,7 +101,7 @@ jobs:
 
       - name: Build ${{ matrix.addon }} add-on
         if: steps.check.outputs.build_arch == 'true'
-        uses: home-assistant/builder@2025.11.0
+        uses: home-assistant/builder@21bc64d76dad7a5184c67826aab41c6b6f89023a # 2025.11.0
         with:
           args: |
             ${{ env.BUILD_ARGS }} \
