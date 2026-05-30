@@ -7,7 +7,7 @@
 <p align="center">
   <b>Add-ons as code for Home Assistant.</b><br />
   Declare which add-ons should be installed, how they are configured, and which
-  ones should be removed — all in a single YAML file you can keep in git.
+  ones should be removed - all in a single YAML file you can keep in git.
 </p>
 
 <p align="center">
@@ -22,7 +22,7 @@ add-on, but it doesn't scale:
 
 - Rebuilding or migrating a Home Assistant instance means re-installing and
   re-configuring every add-on by hand, from memory.
-- There is no version history of your add-on configuration — no diff, no
+- There is no version history of your add-on configuration - no diff, no
   rollback, no review.
 - Keeping several Home Assistant instances consistent is a manual chore.
 
@@ -35,7 +35,7 @@ declarative `addman.yaml` file:
 - **Configures** them: options, `boot`, `watchdog`, `auto_update`,
   `ingress_panel`, start/restart behaviour.
 - **Removes** add-ons you mark with `state: absent`.
-- **Validates** every option against the add-on's own schema *before* applying,
+- **Validates** every option against the add-on's own schema _before_ applying,
   so a typo can't break an add-on.
 
 Point AddMan's config directory at a git repo (e.g. with the
@@ -44,7 +44,7 @@ add-on) and your entire add-on setup becomes version-controlled,
 reproducible infrastructure-as-code.
 
 ```
-addman.yaml  ──►  AddMan reconcile loop  ──►  Home Assistant Supervisor API
+addman.yaml  ->  AddMan reconcile loop  ->   Home Assistant Supervisor API
 (desired state)   (every check_interval)      (install / configure / remove)
 ```
 
