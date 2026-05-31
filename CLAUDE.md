@@ -29,10 +29,11 @@ bash tests/smoke_test.sh addman-test
 ### Building
 
 ```bash
-# Builds are handled exclusively by GitHub Actions (.github/workflows/builder.yaml)
+# Builds are handled by GitHub Actions
+# (.github/workflows/builder.yaml -> .github/workflows/build-app.yaml)
 # Triggered on: push to main, pull requests
 # Builds for: aarch64, amd64
-# Output: ghcr.io/dadav/addman:VERSION
+# Output: ghcr.io/dadav/addon-addman:VERSION multi-arch manifest
 
 # The builder only rebuilds when these files change:
 # - build.yaml
@@ -41,13 +42,12 @@ bash tests/smoke_test.sh addman-test
 # - rootfs/
 ```
 
-**Architecture constraint (do not re-add 32-bit):** `home-assistant/builder`
-(currently `2025.11.0`) only accepts `--aarch64` and `--amd64`. Home Assistant
-dropped 32-bit support, so `armv7`/`armhf`/`i386` are NOT buildable — passing
-them fails CI with `Argument '--armv7' unknown`. Keep `arch:` in `config.yaml`,
-`build_from:` in `build.yaml`, the `arch` matrix in
-`.github/workflows/builder.yaml`, and the README/DOCS arch badges limited to
-`aarch64` + `amd64`. They must stay in sync.
+**Architecture constraint (do not re-add 32-bit):** Home Assistant's current
+BuildKit-based builder actions support `aarch64` and `amd64` for this add-on.
+Home Assistant dropped 32-bit support, so `armv7`/`armhf`/`i386` are NOT
+buildable. Keep `arch:` in `config.yaml`, `build_from:` in `build.yaml`, and
+the README/DOCS arch badges limited to `aarch64` + `amd64`. They must stay in
+sync.
 
 ### Development Workflow
 
@@ -212,7 +212,8 @@ To test changes:
 2. Update `addman/CHANGELOG.md` with changes
 3. Commit with message like "chore: version++"
 4. Push to main branch
-5. GitHub Actions automatically builds and publishes to ghcr.io
+5. GitHub Actions builds per-arch images and publishes the multi-arch manifest
+   to ghcr.io
 6. Users can update via Home Assistant UI
 
 **Note**: The `version` field in `config.yaml` must be manually updated. Renovate only handles dependency updates (base images, actions).
@@ -259,7 +260,7 @@ Set `log_level: debug` in the AddMan add-on configuration (via Home Assistant UI
 
 **Build Dependencies**:
 - Base image: `ghcr.io/hassio-addons/base:20.1.1`
-- Home Assistant builder action: `home-assistant/builder@2025.11.0`
+- Home Assistant BuildKit actions: `home-assistant/builder/actions/*@2026.03.2`
 
 **When updating dependencies**:
 - Base image: Update in `addman/build.yaml` (Renovate handles this automatically)

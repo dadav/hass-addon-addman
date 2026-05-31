@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Keep local and Home Assistant builder base image versions aligned.
 - Replace deprecated GitHub Actions `set-output` commands with `$GITHUB_OUTPUT`.
+- Migrate the release workflow from the retired `home-assistant/builder` action
+  to the current Home Assistant BuildKit composite actions.
+- Publish `ghcr.io/dadav/addon-addman` as the multi-arch image while keeping
+  per-architecture images as build outputs.
 
 ### Fixed
 
