@@ -43,14 +43,27 @@ jobs:
           URL: ${{ steps.info.outputs.url }}
           VERSION: ${{ steps.info.outputs.version }}
         run: |
-          image="${IMAGE/\{arch\}-/}"
+          strip_quotes() {
+            local value="${1}"
+            value="${value%\"}"
+            value="${value#\"}"
+            printf "%s" "${value}"
+          }
+
+          description="$(strip_quotes "${DESCRIPTION}")"
+          image="$(strip_quotes "${IMAGE}")"
+          name="$(strip_quotes "${NAME}")"
+          url="$(strip_quotes "${URL}")"
+          version="$(strip_quotes "${VERSION}")"
+
+          image="${image/\{arch\}-/}"
           echo "image_name=${image##*/}" >> "$GITHUB_OUTPUT"
           echo "registry_prefix=${image%/*}" >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-          echo "name=${NAME}" >> "$GITHUB_OUTPUT"
-          echo "description=${DESCRIPTION}" >> "$GITHUB_OUTPUT"
-          if [[ -n "${URL}" && "${URL}" != "null" ]]; then
-            echo "url=${URL}" >> "$GITHUB_OUTPUT"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "name=${name}" >> "$GITHUB_OUTPUT"
+          echo "description=${description}" >> "$GITHUB_OUTPUT"
+          if [[ -n "${url}" && "${url}" != "null" ]]; then
+            echo "url=${url}" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Prepare build matrix
