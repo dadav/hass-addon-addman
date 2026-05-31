@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0]
+
+### Added
+
+- Add `dry_run` mode to preview repository, install, configuration, start,
+  restart and uninstall actions without applying them.
+
+### Changed
+
+- Keep local and Home Assistant builder base image versions aligned.
+- Replace deprecated GitHub Actions `set-output` commands with `$GITHUB_OUTPUT`.
+
+### Fixed
+
+- Allow configs that omit `repositories` or `addons`.
+- Redact expanded configuration content from trace logs so secrets are not
+  printed.
+- Fix the advanced example to use `auto_update` and valid `boot` values.
+- Make the repository YAML lint command pass for GitHub workflow files.
+- Allow the AppArmor profile to write the default `/config/addman.yaml`.
+
 ## [2.1.0]
 
 ### Added

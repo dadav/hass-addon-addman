@@ -14,5 +14,6 @@ addons:
       check_interval: 600
       check_updates_x_iterations: 6
       config_file: /config/addman.yaml
+      dry_run: false
       log_level: info
       watch_config_changes: true

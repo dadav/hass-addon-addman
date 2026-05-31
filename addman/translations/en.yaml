@@ -13,6 +13,9 @@ configuration:
   config_file:
     name: Config file
     description: The path to the add-on config file.
+  dry_run:
+    name: Dry run
+    description: Log the planned changes without applying them.
   log_level:
     name: Log level
     description: The amount of logging the add-on should do.

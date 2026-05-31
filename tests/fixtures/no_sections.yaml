@@ -1,0 +1,3 @@
+---
+# Intentionally empty desired state. This fixture verifies AddMan accepts
+# configs that omit both optional top-level sections: repositories and addons.

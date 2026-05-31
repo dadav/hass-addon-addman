@@ -74,6 +74,7 @@ The AddMan add-on default configuration looks like this:
 check_interval: 600
 check_updates_x_iterations: 6
 config_file: /config/addman.yaml
+dry_run: false
 log_level: info
 watch_config_changes: false
 ```
@@ -104,6 +105,15 @@ with AddMan.
 
 If you don't change this value, a default configuration will be copied 
 to your configuration directory (`/config/addman.yaml`).
+
+### Option: `dry_run`
+
+If this option is set to true, AddMan reads and validates the target
+configuration, then logs the changes it would make without modifying
+repositories, add-ons or add-on options.
+
+Use this before enabling a new or heavily changed `addman.yaml`, especially
+when the file contains `state: absent` entries.
 
 An example add-on configuration looks like this:
 
@@ -141,6 +151,7 @@ addons:
       check_interval: 600
       check_updates_x_iterations: 6
       config_file: /config/addman.yaml
+      dry_run: false
       log_level: info
       watch_config_changes: true
 ```
@@ -222,6 +233,9 @@ Set `log_level: debug` (or `trace`) on the AddMan add-on to get more detail.
 - **Edits not applied** — if `watch_config_changes` is `false`, restart AddMan
   after editing `addman.yaml`. If `true`, changes apply within `check_interval`
   seconds.
+- **Preview changes first** — set `dry_run: true` in the AddMan add-on
+  configuration. AddMan will log planned repository, install, option, start,
+  restart and uninstall actions without applying them.
 
 ## Changelog
 

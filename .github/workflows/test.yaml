@@ -1,7 +1,7 @@
 ---
 name: Test
 
-on:
+"on":
   push:
     branches:
       - main
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: 🏗️ Build add-on image
         run: docker build -t addman-test ./addman

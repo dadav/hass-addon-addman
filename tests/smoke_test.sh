@@ -34,6 +34,7 @@ MOCK_PID=""
 export MOCK_HOST="127.0.0.1"
 export MOCK_PORT
 export MOCK_LOG
+export MOCK_DRY_RUN=false
 
 cleanup() {
     docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
@@ -50,21 +51,25 @@ fail() {
     exit 1
 }
 
+start_mock() {
+    echo "Starting mock Supervisor on 127.0.0.1:${MOCK_PORT}..."
+    python3 "${SCRIPT_DIR}/mock_supervisor.py" &
+    MOCK_PID=$!
+
+    for _ in $(seq 1 30); do
+        if curl -fsS "http://127.0.0.1:${MOCK_PORT}/store/repositories" >/dev/null 2>&1; then
+            break
+        fi
+        sleep 0.5
+    done
+    curl -fsS "http://127.0.0.1:${MOCK_PORT}/store/repositories" >/dev/null 2>&1 \
+        || fail "mock Supervisor did not come up"
+}
+
 # ------------------------------------------------------------------------------
 # 1. Start the mock Supervisor and wait until it answers.
 # ------------------------------------------------------------------------------
-echo "Starting mock Supervisor on 127.0.0.1:${MOCK_PORT}..."
-python3 "${SCRIPT_DIR}/mock_supervisor.py" &
-MOCK_PID=$!
-
-for _ in $(seq 1 30); do
-    if curl -fsS "http://127.0.0.1:${MOCK_PORT}/store/repositories" >/dev/null 2>&1; then
-        break
-    fi
-    sleep 0.5
-done
-curl -fsS "http://127.0.0.1:${MOCK_PORT}/store/repositories" >/dev/null 2>&1 \
-    || fail "mock Supervisor did not come up"
+start_mock
 
 # ------------------------------------------------------------------------------
 # 2. Run the real add-on script against the mock.
@@ -126,3 +131,102 @@ if grep -qiE 'crashed|fatal' "${CONTAINER_LOG}"; then
 fi
 
 echo "PASS: AddMan reconciled the test scenario successfully."
+
+# ------------------------------------------------------------------------------
+# 5. Dry-run mode: plan the same scenario but do not mutate Supervisor state.
+# ------------------------------------------------------------------------------
+docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
+kill "${MOCK_PID}" >/dev/null 2>&1 || true
+MOCK_PID=""
+
+CONTAINER="addman-smoke-dry-run"
+MOCK_LOG="$(mktemp)"
+CONTAINER_LOG="$(mktemp)"
+MOCK_DRY_RUN=true
+export MOCK_LOG
+export MOCK_DRY_RUN
+
+start_mock
+
+echo "Starting dry-run add-on container from image '${IMAGE}'..."
+docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
+docker run -d --name "${CONTAINER}" --network host \
+    --entrypoint /usr/bin/bashio \
+    -e "SUPERVISOR_API=http://127.0.0.1:${MOCK_PORT}" \
+    -e "SUPERVISOR_TOKEN=test-token" \
+    -v "${SCRIPT_DIR}/fixtures/addman.yaml:/config/addman.yaml:ro" \
+    "${IMAGE}" /usr/bin/addman.sh >/dev/null
+
+echo "Waiting for AddMan dry-run plan..."
+seen=0
+for _ in $(seq 1 60); do
+    docker logs "${CONTAINER}" >"${CONTAINER_LOG}" 2>&1 || true
+    if grep -q '\[dry-run\].*Would add addon repository' "${CONTAINER_LOG}" \
+        && grep -q '\[dry-run\].*Would install add-on' "${CONTAINER_LOG}" \
+        && grep -q '\[dry-run\].*Would uninstall add-on' "${CONTAINER_LOG}"; then
+        seen=1
+        break
+    fi
+    sleep 1
+done
+
+[[ "${seen}" -eq 1 ]] || fail "expected dry-run plan did not appear within timeout"
+
+echo "Asserting dry-run did not mutate Supervisor state..."
+if grep -q '"POST".*"/store/repositories"' "${MOCK_LOG}"; then
+    fail "dry-run added a repository"
+fi
+if grep -q '"/addons/test_addon/install"' "${MOCK_LOG}"; then
+    fail "dry-run installed test_addon"
+fi
+if grep -q '"/addons/test_addon/options"' "${MOCK_LOG}"; then
+    fail "dry-run changed test_addon options"
+fi
+if grep -q '"/addons/test_addon/start"' "${MOCK_LOG}"; then
+    fail "dry-run started test_addon"
+fi
+if grep -q '"/addons/absent_addon/uninstall"' "${MOCK_LOG}"; then
+    fail "dry-run uninstalled absent_addon"
+fi
+
+grep -q '/addons/test_addon/options/validate' "${MOCK_LOG}" \
+    || fail "dry-run did not validate test_addon options"
+
+echo "PASS: AddMan dry-run planned the scenario without mutating state."
+
+# ------------------------------------------------------------------------------
+# 6. Empty desired state: missing repositories/addons sections must not crash.
+# ------------------------------------------------------------------------------
+docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
+kill "${MOCK_PID}" >/dev/null 2>&1 || true
+MOCK_PID=""
+
+CONTAINER="addman-smoke-no-sections"
+MOCK_LOG="$(mktemp)"
+CONTAINER_LOG="$(mktemp)"
+MOCK_DRY_RUN=false
+export MOCK_LOG
+export MOCK_DRY_RUN
+
+start_mock
+
+echo "Starting no-sections add-on container from image '${IMAGE}'..."
+docker rm -f "${CONTAINER}" >/dev/null 2>&1 || true
+docker run -d --name "${CONTAINER}" --network host \
+    --entrypoint /usr/bin/bashio \
+    -e "SUPERVISOR_API=http://127.0.0.1:${MOCK_PORT}" \
+    -e "SUPERVISOR_TOKEN=test-token" \
+    -v "${SCRIPT_DIR}/fixtures/no_sections.yaml:/config/addman.yaml:ro" \
+    "${IMAGE}" /usr/bin/addman.sh >/dev/null
+
+sleep 3
+docker logs "${CONTAINER}" >"${CONTAINER_LOG}" 2>&1 || true
+
+if ! docker inspect -f '{{.State.Running}}' "${CONTAINER}" 2>/dev/null | grep -q true; then
+    fail "no-sections config caused the add-on container to stop"
+fi
+if grep -qiE 'parse error|crashed|fatal' "${CONTAINER_LOG}"; then
+    fail "no-sections config produced an error"
+fi
+
+echo "PASS: AddMan accepted a config without repositories/addons sections."

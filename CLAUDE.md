@@ -21,6 +21,9 @@ yamllint -c .yamllint .
 
 # Test build locally (requires Docker)
 docker build -t addman-test ./addman
+
+# Run the end-to-end smoke test against the mock Supervisor (requires Docker)
+bash tests/smoke_test.sh addman-test
 ```
 
 ### Building
@@ -48,13 +51,14 @@ them fails CI with `Argument '--armv7' unknown`. Keep `arch:` in `config.yaml`,
 
 ### Development Workflow
 
-There are no local development commands. This add-on is developed and tested by:
+This add-on is developed and tested by:
 
 1. Making code changes to `addman/rootfs/usr/bin/addman.sh`
 2. Updating version in `addman/config.yaml`
-3. Pushing to GitHub (triggers build)
-4. Installing/updating in Home Assistant Supervisor
-5. Testing with live configuration files
+3. Building locally with `docker build -t addman-test ./addman`
+4. Running `bash tests/smoke_test.sh addman-test`
+5. Pushing to GitHub (triggers build and CI smoke test)
+6. Installing/updating in Home Assistant Supervisor when live validation is needed
 
 ## Architecture
 
@@ -168,7 +172,7 @@ addons:
 ### Security Model
 
 **AppArmor Profile** (`apparmor.txt`):
-- Read-only access to `/config/` (for user configuration)
+- Read-write access to `/config/` so AddMan can create the default config file
 - Read-write access to `/data/`, `/tmp/`
 - Restricted network access (can only communicate with Supervisor)
 - Limited binary execution (only specific tools like `yq`, `jq`, `curl`)
@@ -177,19 +181,24 @@ The add-on runs with `hassio_api: true` privilege to communicate with the Superv
 
 ## Testing Strategy
 
-There are no automated unit tests. Testing happens via:
+Testing happens via:
 
 1. **Linting**: GitHub Actions runs `frenck/action-addon-linter` on all changes
-2. **Manual Testing**: Install the add-on in a live Home Assistant instance
-3. **Validation**: The script validates all options via Supervisor API before applying
+2. **Smoke test**: `tests/smoke_test.sh` builds/runs the add-on script against
+   `tests/mock_supervisor.py`, covering apply mode, dry-run mode and empty
+   desired-state configs
+3. **Manual Testing**: Install the add-on in a live Home Assistant instance
+4. **Validation**: The script validates all options via Supervisor API before applying
 
 To test changes:
 1. Update code in `addman/rootfs/usr/bin/addman.sh`
 2. Bump version in `addman/config.yaml`
-3. Commit and push (triggers build)
-4. Install/update from the repository in Home Assistant
-5. Configure test add-ons in `/config/addman.yaml`
-6. Monitor logs via Home Assistant UI or `docker logs addon_XXX_addman`
+3. Build locally with `docker build -t addman-test ./addman`
+4. Run `bash tests/smoke_test.sh addman-test`
+5. Commit and push (triggers build)
+6. Install/update from the repository in Home Assistant
+7. Configure test add-ons in `/config/addman.yaml`
+8. Monitor logs via Home Assistant UI or `docker logs addon_XXX_addman`
 
 ## Versioning & Release Process
 
@@ -249,7 +258,7 @@ Set `log_level: debug` in the AddMan add-on configuration (via Home Assistant UI
 - `jq` - JSON processor for API response handling
 
 **Build Dependencies**:
-- Base image: `ghcr.io/hassio-addons/base:19.0.0`
+- Base image: `ghcr.io/hassio-addons/base:20.1.1`
 - Home Assistant builder action: `home-assistant/builder@2025.11.0`
 
 **When updating dependencies**:

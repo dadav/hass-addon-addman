@@ -43,7 +43,7 @@ profile addman flags=(attach_disconnected,mediate_deleted) {
     /{,usr/}bin/** rmix,
     /{,usr/}lib/** rm,
     /etc/** r,
-    /config/** r,
+    /config/{,**} rw,
     /run/{s6,s6-rc*,service}/** r,
     /package/** rmix,
     /dev/tty rw,

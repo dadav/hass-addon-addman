@@ -28,12 +28,21 @@ MOCK_HOST = os.environ.get("MOCK_HOST", "127.0.0.1")
 MOCK_PORT = int(os.environ.get("MOCK_PORT", "8099"))
 MOCK_LOG = os.environ.get("MOCK_LOG", "/tmp/mock_supervisor.log")
 
+
+def _env_bool(name, default=False):
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
 # AddMan's own options, returned for GET /addons/self/options/config. Short
 # check_interval keeps the reconcile loop quick.
 SELF_CONFIG = {
     "check_interval": 5,
     "check_updates_x_iterations": 0,
     "config_file": "/config/addman.yaml",
+    "dry_run": _env_bool("MOCK_DRY_RUN"),
     "log_level": "info",
     "watch_config_changes": False,
 }

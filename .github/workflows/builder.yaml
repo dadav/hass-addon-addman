@@ -5,7 +5,7 @@ env:
   BUILD_ARGS: "--test"
   MONITORED_FILES: "build.yaml config.yaml Dockerfile rootfs"
 
-on:
+"on":
   push:
     branches:
       - main
@@ -22,15 +22,15 @@ jobs:
       changed: ${{ steps.changed_addons.outputs.changed }}
     steps:
       - name: Check out the repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Get changed files
         id: changed_files
-        uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c # v2.3.0
+        uses: Ana06/get-changed-files@25f79e676e7ea1868813e21465014798211fad8c  # v2.3.0
 
       - name: Find add-on directories
         id: addons
-        uses: home-assistant/actions/helpers/find-addons@868e6cb4607727d764341a158d98872cd63fa658 # master
+        uses: home-assistant/actions/helpers/find-addons@868e6cb4607727d764341a158d98872cd63fa658  # master
 
       - name: Get changed add-ons
         id: changed_addons
@@ -52,10 +52,12 @@ jobs:
 
           if [[ -n ${changed} ]]; then
             echo "Changed add-ons: $changed";
-            echo "::set-output name=changed::true";
-            echo "::set-output name=addons::[$changed]";
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "addons=[$changed]" >> "$GITHUB_OUTPUT"
           else
             echo "No add-on had any monitored files changed (${{ env.MONITORED_FILES }})";
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "addons=[]" >> "$GITHUB_OUTPUT"
           fi
   build:
     needs: init
@@ -69,11 +71,11 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
 
       - name: Get information
         id: info
-        uses: home-assistant/actions/helpers/info@868e6cb4607727d764341a158d98872cd63fa658 # master
+        uses: home-assistant/actions/helpers/info@868e6cb4607727d764341a158d98872cd63fa658  # master
         with:
           path: "./${{ matrix.addon }}"
 
@@ -81,19 +83,19 @@ jobs:
         id: check
         run: |
           if [[ "${{ steps.info.outputs.architectures }}" =~ ${{ matrix.arch }} ]]; then
-             echo "::set-output name=build_arch::true";
-             echo "::set-output name=image::$(echo ${{ steps.info.outputs.image }} | cut -d'/' -f3)";
+             echo "build_arch=true" >> "$GITHUB_OUTPUT";
+             echo "image=$(echo ${{ steps.info.outputs.image }} | cut -d'/' -f3)" >> "$GITHUB_OUTPUT";
              if [[ -z "${{ github.head_ref }}" ]] && [[ "${{ github.event_name }}" == "push" ]]; then
-                 echo "BUILD_ARGS=" >> $GITHUB_ENV;
+                 echo "BUILD_ARGS=" >> "$GITHUB_ENV";
              fi
            else
              echo "${{ matrix.arch }} is not a valid arch for ${{ matrix.addon }}, skipping build";
-             echo "::set-output name=build_arch::false";
+             echo "build_arch=false" >> "$GITHUB_OUTPUT";
           fi
 
       - name: Login to GitHub Container Registry
         if: env.BUILD_ARGS != '--test'
-        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee  # v4.2.0
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -101,7 +103,7 @@ jobs:
 
       - name: Build ${{ matrix.addon }} add-on
         if: steps.check.outputs.build_arch == 'true'
-        uses: home-assistant/builder@21bc64d76dad7a5184c67826aab41c6b6f89023a # 2025.11.0
+        uses: home-assistant/builder@21bc64d76dad7a5184c67826aab41c6b6f89023a  # 2025.11.0
         with:
           args: |
             ${{ env.BUILD_ARGS }} \

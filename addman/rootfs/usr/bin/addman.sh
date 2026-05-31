@@ -170,6 +170,7 @@ main() {
     local check_updates_x_iterations
     local config_file
     local config_content
+    local dry_run
     local watch_config_changes
     local iterations=0
 
@@ -177,20 +178,30 @@ main() {
 
     watch_config_changes=$(bashio::config 'watch_config_changes')
     config_file=$(bashio::config 'config_file')
+    dry_run=$(bashio::config 'dry_run')
     check_updates_x_iterations=$(bashio::config 'check_updates_x_iterations')
+
+    if bashio::var.true "$dry_run"; then
+        bashio::log.warning "[dry-run] AddMan will only log planned changes."
+    fi
 
     bashio::log.trace "Checking if $config_file exists..."
     if ! bashio::fs.file_exists "$config_file"; then
         if ! bashio::var.equals "$config_file" /config/addman.yaml; then
             return "${__BASHIO_EXIT_NOK}"
         fi
-        bashio::log.info '[addman] Copy default config to /config/addman.yaml'
-        cp /etc/addman/defaults.yaml /config/addman.yaml
+        if bashio::var.true "$dry_run"; then
+            bashio::log.info '[dry-run] Would copy default config to /config/addman.yaml'
+            config_file=/etc/addman/defaults.yaml
+        else
+            bashio::log.info '[addman] Copy default config to /config/addman.yaml'
+            cp /etc/addman/defaults.yaml /config/addman.yaml
+        fi
     fi
 
     bashio::log.trace "Reading config from $config_file ..."
     config_content=$(addman::yaml_to_json "$config_file")
-    bashio::log.trace "Got this config: $config_content"
+    bashio::log.trace "Loaded config from $config_file."
 
     sleep=$(bashio::config 'check_interval')
     bashio::log.info "Seconds between checks is set to: ${sleep}"
@@ -201,7 +212,7 @@ main() {
         if bashio::var.true "$watch_config_changes"; then
             bashio::log.trace "Reading config from $config_file ..."
             config_content=$(addman::yaml_to_json "$config_file")
-            bashio::log.trace "Got this config: $config_content"
+            bashio::log.trace "Loaded config from $config_file."
         fi
         bashio::log.trace "Start repositories iteration"
 
@@ -210,32 +221,46 @@ main() {
 
         current_repositories=$(addman::addons.fetch_repositories)
 
-        for repo in $(bashio::jq "$config_content" ".repositories[]"); do
+        for repo in $(bashio::jq "$config_content" ".repositories // [] | .[]"); do
             bashio::log.trace "Check if $repo exists"
             if bashio::jq.has_value "${current_repositories}" ".[] | select(.url == \"${repo}\")"; then
                 bashio::log.trace "$repo already exists"
                 continue
             fi
-            bashio::log.info "Adding addon repository: $repo"
-            addman::addons.add_repository "$repo"
+            if bashio::var.true "$dry_run"; then
+                bashio::log.info "[dry-run] Would add addon repository: $repo"
+            else
+                bashio::log.info "Adding addon repository: $repo"
+                addman::addons.add_repository "$repo"
+            fi
             repository_changed="true"
         done
 
         if bashio::var.true "$repository_changed"; then
-            bashio::log.info "Repositories have changed. Refreshing add-ons."
-            bashio::addons.reload
+            if bashio::var.true "$dry_run"; then
+                bashio::log.info "[dry-run] Would refresh add-ons after repository changes."
+            else
+                bashio::log.info "Repositories have changed. Refreshing add-ons."
+                bashio::addons.reload
+            fi
         elif [[ $check_updates_x_iterations -gt 0 && $(( iterations % check_updates_x_iterations)) -eq 0 ]]; then
-            bashio::log.info "This is the ${iterations}. iteration, time to check for updates."
-            bashio::addons.reload
+            if bashio::var.true "$dry_run"; then
+                bashio::log.info "[dry-run] Would check for add-on updates on iteration ${iterations}."
+            else
+                bashio::log.info "This is the ${iterations}. iteration, time to check for updates."
+                bashio::addons.reload
+            fi
         fi
 
         bashio::log.trace "Start addon iteration"
-        for slug in $(bashio::jq "$config_content" ".addons | keys | .[]"); do
+        for slug in $(bashio::jq "$config_content" ".addons // {} | keys | .[]"); do
             local addon_settings
             local addon_options
             local addon_changed="false"
+            local addon_installed
 
             addon_settings=$(bashio::jq "$config_content" ".addons.\"${slug}\"")
+            addon_installed=$(bashio::addons.installed "$slug")
 
             # Declarative removal: `state: absent` uninstalls a managed add-on.
             # Anything else (or no `state` key) is treated as `present`.
@@ -244,41 +269,70 @@ main() {
                     bashio::log.warning "[${slug}] Refusing to uninstall AddMan itself; ignoring 'state: absent'."
                     continue
                 fi
-                if bashio::var.true "$(bashio::addons.installed "$slug")"; then
-                    bashio::log.info "[${slug}] state is 'absent'. Uninstalling add-on..."
-                    addman::addon.uninstall "$slug"
+                if bashio::var.true "$addon_installed"; then
+                    if bashio::var.true "$dry_run"; then
+                        bashio::log.info "[dry-run] [${slug}] state is 'absent'. Would uninstall add-on."
+                    else
+                        bashio::log.info "[${slug}] state is 'absent'. Uninstalling add-on..."
+                        addman::addon.uninstall "$slug"
+                    fi
                 fi
                 continue
             fi
 
             bashio::log.trace "[${slug}] Check if already installed"
-            if bashio::var.false "$(bashio::addons.installed "$slug")"; then
-                bashio::log.info "[${slug}] Installing add-on..."
-                bashio::addon.install "$slug"
+            if bashio::var.false "$addon_installed"; then
+                if bashio::var.true "$dry_run"; then
+                    bashio::log.info "[dry-run] [${slug}] Would install add-on."
+                else
+                    bashio::log.info "[${slug}] Installing add-on..."
+                    bashio::addon.install "$slug"
+                    addon_installed="true"
+                fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".boot"; then
-                bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"
+                if bashio::var.true "$dry_run"; then
+                    bashio::log.info "[dry-run] [${slug}] Would set boot to $(bashio::jq "$addon_settings" ".boot")."
+                else
+                    bashio::addon.boot "$slug" "$(bashio::jq "$addon_settings" ".boot")"
+                fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".auto_update"; then
-                bashio::addon.auto_update "$slug" "$(bashio::jq "$addon_settings" ".auto_update")"
+                if bashio::var.true "$dry_run"; then
+                    bashio::log.info "[dry-run] [${slug}] Would set auto_update to $(bashio::jq "$addon_settings" ".auto_update")."
+                else
+                    bashio::addon.auto_update "$slug" "$(bashio::jq "$addon_settings" ".auto_update")"
+                fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".watchdog"; then
-                bashio::addon.watchdog "$slug" "$(bashio::jq "$addon_settings" ".watchdog")"
+                if bashio::var.true "$dry_run"; then
+                    bashio::log.info "[dry-run] [${slug}] Would set watchdog to $(bashio::jq "$addon_settings" ".watchdog")."
+                else
+                    bashio::addon.watchdog "$slug" "$(bashio::jq "$addon_settings" ".watchdog")"
+                fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".ingress_panel"; then
-                addman::addon.ingress_panel "$slug" "$(bashio::jq "$addon_settings" ".ingress_panel")"
+                if bashio::var.true "$dry_run"; then
+                    bashio::log.info "[dry-run] [${slug}] Would set ingress_panel to $(bashio::jq "$addon_settings" ".ingress_panel")."
+                else
+                    addman::addon.ingress_panel "$slug" "$(bashio::jq "$addon_settings" ".ingress_panel")"
+                fi
             fi
 
             if bashio::jq.exists "$addon_settings" ".options"; then
                 local current_options
-                current_options=$(bashio::addon.options "$slug")
+                if bashio::var.true "$dry_run" && bashio::var.false "$addon_installed"; then
+                    current_options="{}"
+                else
+                    current_options=$(bashio::addon.options "$slug")
+                fi
 
                 addon_options=$(bashio::jq "$addon_settings" ".options")
-                bashio::log.trace "[${slug}] Found these options $addon_options"
+                bashio::log.trace "[${slug}] Found options block."
 
                 if addman::addon.validate_options "$addon_options" "$slug"; then
                     for key in $(bashio::jq "$addon_options" "keys | .[]"); do
@@ -286,13 +340,17 @@ main() {
                         local value
                         value=$(bashio::jq "$addon_options" ".\"${key}\"")
                         if ! bashio::var.equals "$(bashio::jq "$current_options" ".\"${key}\"")" "$value"; then
-                            bashio::log.info "[${slug}] Setting $key to $value"
-                            if addman::var.is_yaml_bool "$value" || [[ "${value[0]}" =~ [\[{] ]]; then
-                                bashio::addon.option "$key" "^$value" "$slug"
-                            else
-                                bashio::addon.option "$key" "$value" "$slug"
-                            fi
                             addon_changed="true"
+                            if bashio::var.true "$dry_run"; then
+                                bashio::log.info "[dry-run] [${slug}] Would set option '${key}'."
+                            else
+                                bashio::log.info "[${slug}] Setting option '${key}'."
+                                if addman::var.is_yaml_bool "$value" || [[ "${value[0]}" =~ [\[{] ]]; then
+                                    bashio::addon.option "$key" "^$value" "$slug"
+                                else
+                                    bashio::addon.option "$key" "$value" "$slug"
+                                fi
+                            fi
                         fi
                     done
                 else
@@ -308,14 +366,26 @@ main() {
 
             if bashio::jq.exists "$addon_settings" ".auto_start"; then
                 if bashio::var.true "$(bashio::jq "$addon_settings" ".auto_start")"; then
-                    if ! bashio::var.equals "$(bashio::addon.state "$slug")" "started"; then
-                        bashio::log.info "[${slug}] Starting add-on..."
-                        bashio::addon.start "$slug"
+                    if bashio::var.false "$addon_installed"; then
+                        if bashio::var.true "$dry_run"; then
+                            bashio::log.info "[dry-run] [${slug}] Would start add-on after install."
+                        fi
+                    elif ! bashio::var.equals "$(bashio::addon.state "$slug")" "started"; then
+                        if bashio::var.true "$dry_run"; then
+                            bashio::log.info "[dry-run] [${slug}] Would start add-on."
+                        else
+                            bashio::log.info "[${slug}] Starting add-on..."
+                            bashio::addon.start "$slug"
+                        fi
                     elif bashio::var.true "$addon_changed"; then
                         if ! bashio::jq.exists "$addon_settings" ".auto_restart" || \
                              bashio::var.true "$(bashio::jq "$addon_settings" ".auto_restart")"; then
-                                bashio::log.info "[${slug}] Options changed. Restarting add-on..."
-                                bashio::addon.restart "$slug"
+                                if bashio::var.true "$dry_run"; then
+                                    bashio::log.info "[dry-run] [${slug}] Options would change. Would restart add-on."
+                                else
+                                    bashio::log.info "[${slug}] Options changed. Restarting add-on..."
+                                    bashio::addon.restart "$slug"
+                                fi
                         fi
                     fi
                 fi

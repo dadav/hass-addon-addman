@@ -9,8 +9,8 @@ addons:
     auto_start: true
     auto_restart: true
     watchdog: true
-    auto_updates: false
-    boot: true
+    auto_update: false
+    boot: auto
     options:
       peers:
         - name: foo
@@ -24,7 +24,7 @@ addons:
             - 10.8.0.10/32
             - 10.8.0.11/32
       server:
-        adresses:
+        addresses:
           - 10.8.0.12
         dns: []
         host: home.local
@@ -32,5 +32,5 @@ addons:
     auto_start: true
     auto_restart: false
     watchdog: true
-    auto_updates: false
-    boot: true
+    auto_update: false
+    boot: auto
