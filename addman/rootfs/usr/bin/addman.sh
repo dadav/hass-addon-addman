@@ -178,7 +178,7 @@ main() {
 
     watch_config_changes=$(bashio::config 'watch_config_changes')
     config_file=$(bashio::config 'config_file')
-    dry_run=$(bashio::config 'dry_run')
+    dry_run=$(bashio::config 'dry_run' 'false')
     check_updates_x_iterations=$(bashio::config 'check_updates_x_iterations')
 
     if bashio::var.true "$dry_run"; then

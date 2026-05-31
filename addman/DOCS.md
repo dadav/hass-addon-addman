@@ -74,7 +74,6 @@ The AddMan add-on default configuration looks like this:
 check_interval: 600
 check_updates_x_iterations: 6
 config_file: /config/addman.yaml
-dry_run: false
 log_level: info
 watch_config_changes: false
 ```
@@ -111,6 +110,8 @@ to your configuration directory (`/config/addman.yaml`).
 If this option is set to true, AddMan reads and validates the target
 configuration, then logs the changes it would make without modifying
 repositories, add-ons or add-on options.
+
+The default is `false` when the option is omitted.
 
 Use this before enabling a new or heavily changed `addman.yaml`, especially
 when the file contains `state: absent` entries.

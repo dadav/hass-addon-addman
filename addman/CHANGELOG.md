@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.1]
+
+### Fixed
+
+- Make `dry_run` optional in the add-on schema so existing managed `self`
+  option blocks remain valid after upgrading from older AddMan versions.
+
 ## [2.2.0]
 
 ### Added
