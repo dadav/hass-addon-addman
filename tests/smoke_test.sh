@@ -17,6 +17,8 @@
 #
 # The container loops forever, so we stop it once the mock has observed the
 # expected calls and deliberately do NOT gate on the container's exit code.
+# The waiting loop also requires broken_addon to be validated in at least two
+# iterations, so the notification de-duplication can be asserted.
 # bashio reads the Supervisor base URL from the SUPERVISOR_API env var and the
 # add-on's own options from GET /addons/self/options/config (not /data), so no
 # options file needs to be mounted.
@@ -92,7 +94,8 @@ for _ in $(seq 1 60); do
     if grep -q '"POST".*"/store/repositories"' "${MOCK_LOG}" \
         && grep -q '/addons/test_addon/options/validate' "${MOCK_LOG}" \
         && grep -q '/addons/test_addon/start' "${MOCK_LOG}" \
-        && grep -q '/addons/absent_addon/uninstall' "${MOCK_LOG}"; then
+        && grep -q '/addons/absent_addon/uninstall' "${MOCK_LOG}" \
+        && [[ $(grep -c '/addons/broken_addon/options/validate' "${MOCK_LOG}") -ge 2 ]]; then
         seen=1
         break
     fi
@@ -116,6 +119,23 @@ grep -q '"/addons/test_addon/start"' "${MOCK_LOG}" \
     || fail "AddMan did not start test_addon"
 grep -q '"/addons/absent_addon/uninstall"' "${MOCK_LOG}" \
     || fail "AddMan did not uninstall absent_addon (state: absent)"
+
+grep -qF '\"password\":\"[secret{x\"' "${MOCK_LOG}" \
+    || fail "string option starting with [ was not sent as a JSON string"
+grep -qF '\"routes\":[\"10.0.0.0/24\",\"10.0.1.0/24\"]' "${MOCK_LOG}" \
+    || fail "list option was not sent as a JSON array"
+
+echo "Asserting error notifications..."
+grep -q '"POST", "path": "/core/api/services/persistent_notification/create".*broken_addon.*missing option' "${MOCK_LOG}" \
+    || fail "AddMan did not create a persistent notification for broken_addon"
+# broken_addon was validated in >= 2 iterations, but the unchanged error must
+# only be pushed once.
+push_count=$(grep -c '"POST", "path": "/core/api/services/notify/test_phone"' "${MOCK_LOG}" || true)
+[[ "${push_count}" -eq 1 ]] \
+    || fail "expected exactly 1 push via notify.test_phone, got ${push_count}"
+if ! docker inspect -f '{{.State.Running}}' "${CONTAINER}" 2>/dev/null | grep -q true; then
+    fail "an add-on error caused the AddMan container to stop"
+fi
 
 echo "Asserting container logs..."
 grep -qi 'Adding addon repository' "${CONTAINER_LOG}" \

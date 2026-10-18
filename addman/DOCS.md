@@ -175,6 +175,33 @@ more severe level, e.g., `debug` also shows `info` messages. By default,
 the `log_level` is set to `info`, which is the recommended setting unless
 you are troubleshooting.
 
+### Option: `notify_persistent`
+
+If AddMan fails to reconcile something (for example an add-on's options are
+rejected by its schema, an install or start fails, or the config file can't be
+parsed), it creates a Home Assistant persistent notification. One notification
+exists per failing add-on, and AddMan dismisses it automatically once that
+add-on reconciles cleanly again.
+
+The default is `true` when the option is omitted. Set it to `false` to disable
+persistent notifications.
+
+### Option: `notify_service`
+
+Optional. The name of a Home Assistant notify service, for example
+`notify.mobile_app_my_phone`. The `notify.` prefix is optional. When it is
+set, AddMan sends a push message through this service when an error occurs
+and again when it is resolved. This lets you notice a broken add-on (for
+example a VPN add-on you rely on for remote access) before you leave home.
+
+You can find the available notify services in Home Assistant under
+**Developer tools -> Actions** by searching for `notify.`.
+
+Notifications are sent once per error. AddMan does not repeat an unchanged
+error on every iteration. A new push is only sent when the error message
+changes or the error is resolved. If `addman.sh` itself crashes and the
+add-on halts, AddMan sends a final "AddMan: stopped" notification.
+
 ### Option: `watch_config_changes`
 
 If this option is set to true, the configuration file (`config_file`) will

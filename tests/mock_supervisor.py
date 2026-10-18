@@ -14,7 +14,9 @@ path-specific responses below drive the reconcile path:
   - GET /store/repositories -> [] so the configured repo looks new (-> add)
   - GET /addons/<slug>/info with version=null -> add-on not installed (-> install)
     and state="stopped" (-> start), options={} (-> options differ, get set)
-  - POST .../options/validate -> valid so AddMan applies options
+  - POST .../options/validate -> valid so AddMan applies options, except for
+    broken_addon which is invalid (-> error notification)
+  - POST /core/api/services/... (notifications) -> handled by the catch-all
 
 Stdlib only. Configured via env: MOCK_HOST, MOCK_PORT, MOCK_LOG.
 """
@@ -44,6 +46,7 @@ SELF_CONFIG = {
     "config_file": "/config/addman.yaml",
     "dry_run": _env_bool("MOCK_DRY_RUN"),
     "log_level": "info",
+    "notify_service": "notify.test_phone",
     "watch_config_changes": False,
 }
 
@@ -82,6 +85,9 @@ def response_for(method, path):
     """Return the response body for a request. Most specific patterns first."""
     if method == "GET" and path == "/addons/self/options/config":
         return _ok(SELF_CONFIG)
+
+    if method == "POST" and path == "/addons/broken_addon/options/validate":
+        return _ok({"valid": False, "message": "missing option 'authkey'"})
 
     if method == "POST" and re.search(r"/addons/[^/]+/options/validate$", path):
         return _ok({"valid": True, "message": ""})

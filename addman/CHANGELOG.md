@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0]
+
+### Added
+
+- Notify about reconcile errors through a Home Assistant persistent
+  notification (`notify_persistent`, default `true`) and an optional
+  `notify_service` push. Each error is reported once, and resolved errors
+  send a "resolved" message and dismiss the persistent notification.
+- Send an "AddMan: stopped" notification when `addman.sh` crashes and the
+  add-on halts.
+
+### Changed
+
+- A failing Supervisor call for one add-on (install, settings, options,
+  start, restart, uninstall) no longer crashes AddMan. The error is recorded
+  and the remaining add-ons are still reconciled.
+- An unparsable config file in `watch_config_changes` mode keeps the last
+  valid config instead of crashing.
+- AddMan now requires `homeassistant_api` access to send notifications.
+
+### Fixed
+
+- String options containing `[` or `{` (for example passwords or regexes)
+  were sent as raw JSON and rejected. List and object detection now uses the
+  value's real JSON type.
+
 ## [2.2.1]
 
 ### Fixed

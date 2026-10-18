@@ -2,7 +2,8 @@
 # Smoke-test scenario: one brand-new repository and one not-yet-installed
 # add-on. Drives the full reconcile path: add repo -> reload -> install ->
 # configure (boot/watchdog/auto_update/ingress_panel) -> validate+set options
-# -> start. Also covers declarative removal via `state: absent`.
+# -> start. Also covers declarative removal via `state: absent` and error
+# notifications (broken_addon fails option validation).
 repositories:
   - https://github.com/example/test-repo
 
@@ -16,6 +17,18 @@ addons:
     ingress_panel: false
     options:
       some_key: some_value
+      # Regression: a string starting with [ or { must stay a string.
+      password: "[secret{x"
+      # Lists must still be sent as raw JSON.
+      routes:
+        - 10.0.0.0/24
+        - 10.0.1.0/24
   # The mock reports this add-on as installed, so AddMan must uninstall it.
   absent_addon:
     state: absent
+  # The mock rejects this add-on's options, so AddMan must send exactly one
+  # error notification and keep reconciling the other add-ons.
+  broken_addon:
+    auto_start: true
+    options:
+      authkey: ""

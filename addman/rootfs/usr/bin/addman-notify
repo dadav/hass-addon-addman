@@ -1,0 +1,154 @@
+#!/usr/bin/bashio
+# ==============================================================================
+# Home Assistant Community Add-on: AddMan
+#
+# Sends AddMan error/recovery notifications to Home Assistant Core.
+#
+# Usage: addman-notify <error|resolve> <key> <title> <message>
+#
+#   error   -> create persistent notification (if notify_persistent, default
+#              true) and push via notify_service (if set)
+#   resolve -> dismiss persistent notification and push via notify_service
+#              (if set)
+#
+# Invariant: this script ALWAYS exits 0. A failed notification must never
+# break the AddMan reconcile loop or the finish script.
+# Requires `homeassistant_api: true` in config.yaml for /core/api access.
+# Plain bashio shebang (no with-contenv): callers (addman.sh, finish) already
+# run with the container environment, which this script inherits.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# POST a JSON body to a Home Assistant Core service via the Supervisor proxy.
+#
+# Uses curl directly: Core service calls return a JSON array, not the
+# Supervisor {"result": ...} envelope that bashio::api.supervisor expects.
+#
+# Arguments:
+#   $1 Service path, e.g. persistent_notification/create
+#   $2 JSON body
+# ------------------------------------------------------------------------------
+function addman_notify::core.call_service() {
+    local service=${1}
+    local body=${2}
+    local url="${__BASHIO_SUPERVISOR_API}/core/api/services/${service}"
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    if ! curl --silent --show-error --fail --max-time 15 \
+        --request POST \
+        -H "Authorization: Bearer ${__BASHIO_SUPERVISOR_TOKEN}" \
+        -H "Content-Type: application/json" \
+        -d "${body}" \
+        "${url}" >/dev/null; then
+        bashio::log.warning "[notify] Failed to call Home Assistant service '${service}'."
+        return "${__BASHIO_EXIT_NOK}"
+    fi
+
+    bashio::log.debug "[notify] Called Home Assistant service '${service}'."
+    return "${__BASHIO_EXIT_OK}"
+}
+
+# ------------------------------------------------------------------------------
+# Converts an error key (e.g. addon:tailscale) to a persistent notification id.
+#
+# Arguments:
+#   $1 Error key
+# ------------------------------------------------------------------------------
+function addman_notify::notification_id() {
+    local key=${1}
+    local sanitized
+
+    sanitized=$(printf '%s' "${key}" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9_' '_')
+    printf 'addman_%s' "${sanitized}"
+}
+
+# ------------------------------------------------------------------------------
+# Returns the notify service name without the optional "notify." prefix.
+# Prints nothing if no notify_service is configured.
+# ------------------------------------------------------------------------------
+function addman_notify::service_name() {
+    local service
+
+    service=$(bashio::config 'notify_service' '')
+    if bashio::var.is_empty "${service}" || bashio::var.equals "${service}" "null"; then
+        return "${__BASHIO_EXIT_OK}"
+    fi
+
+    printf '%s' "${service#notify.}"
+}
+
+# ------------------------------------------------------------------------------
+# Push title/message through the configured notify service (if any).
+#
+# Arguments:
+#   $1 Title
+#   $2 Message
+# ------------------------------------------------------------------------------
+function addman_notify::push() {
+    local title=${1}
+    local message=${2}
+    local service
+    local body
+
+    if ! service=$(addman_notify::service_name); then
+        bashio::log.warning "[notify] Could not read notify_service option."
+        return "${__BASHIO_EXIT_NOK}"
+    fi
+    if bashio::var.is_empty "${service}"; then
+        return "${__BASHIO_EXIT_OK}"
+    fi
+
+    body=$(jq -n -c --arg title "${title}" --arg message "${message}" \
+        '{title: $title, message: $message}')
+    addman_notify::core.call_service "notify/${service}" "${body}"
+}
+
+main() {
+    local action=${1:-}
+    local key=${2:-}
+    local title=${3:-AddMan}
+    local message=${4:-}
+    local notification_id
+    local persistent
+    local body
+
+    bashio::log.trace "${FUNCNAME[0]}:" "$@"
+
+    if bashio::var.is_empty "${action}" || bashio::var.is_empty "${key}"; then
+        bashio::log.warning "[notify] Usage: addman-notify <error|resolve> <key> <title> <message>"
+        return "${__BASHIO_EXIT_OK}"
+    fi
+
+    notification_id=$(addman_notify::notification_id "${key}")
+    if ! persistent=$(bashio::config 'notify_persistent' 'true'); then
+        persistent="true"
+    fi
+
+    case "${action}" in
+        error)
+            bashio::log.info "[notify] Sending error notification '${notification_id}'."
+            if bashio::var.true "${persistent}"; then
+                body=$(jq -n -c --arg id "${notification_id}" --arg title "${title}" --arg message "${message}" \
+                    '{notification_id: $id, title: $title, message: $message}')
+                addman_notify::core.call_service "persistent_notification/create" "${body}" || true
+            fi
+            addman_notify::push "${title}" "${message}" || true
+            ;;
+        resolve)
+            bashio::log.info "[notify] Sending resolved notification '${notification_id}'."
+            if bashio::var.true "${persistent}"; then
+                body=$(jq -n -c --arg id "${notification_id}" '{notification_id: $id}')
+                addman_notify::core.call_service "persistent_notification/dismiss" "${body}" || true
+            fi
+            addman_notify::push "${title}" "${message}" || true
+            ;;
+        *)
+            bashio::log.warning "[notify] Unknown action '${action}', expected 'error' or 'resolve'."
+            ;;
+    esac
+
+    return "${__BASHIO_EXIT_OK}"
+}
+main "$@" || true
+exit 0

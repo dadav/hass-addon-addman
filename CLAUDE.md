@@ -118,6 +118,8 @@ All operations use the Home Assistant Supervisor REST API via `curl`. The base U
 
 5. **Secrets Management**: Secrets use standard YAML anchors/aliases. The secrets file is merged at runtime before processing.
 
+6. **Errors Never Exit the Loop**: bashio enables `errexit`. Wrap every Supervisor call in the reconcile loop in `if !` and record failures with `addman::errors.record iteration_errors <key> <message>`. Keep messages stable across iterations, because `addman::errors.notify_changes` only notifies when a message is new or changed, and sends "resolved" when it disappears. The bundled bashio setters (`bashio::addon.boot/watchdog/auto_update/option`, `bashio::addons.reload`) swallow API failures. Use the `addman::` equivalents instead. `/usr/bin/addman-notify` must always exit 0.
+
 ## Configuration Schema
 
 ### Add-on Configuration (`config.yaml`)
@@ -168,6 +170,8 @@ addons:
 - `POST /addons/{slug}/watchdog` - Enable/disable watchdog
 - `POST /addons/{slug}/auto_update` - Enable/disable auto-updates
 - `POST /supervisor/options` - Trigger supervisor update check
+- `POST /core/api/services/persistent_notification/{create,dismiss}` - Error notifications (via `addman-notify`)
+- `POST /core/api/services/notify/{service}` - Optional push notifications (via `addman-notify`)
 
 ### Security Model
 
@@ -177,7 +181,8 @@ addons:
 - Restricted network access (can only communicate with Supervisor)
 - Limited binary execution (only specific tools like `yq`, `jq`, `curl`)
 
-The add-on runs with `hassio_api: true` privilege to communicate with the Supervisor API.
+The add-on runs with `hassio_api: true` privilege to communicate with the Supervisor API
+and `homeassistant_api: true` to send notifications through Home Assistant Core.
 
 ## Testing Strategy
 

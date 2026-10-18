@@ -1,12 +1,13 @@
 ---
 name: AddMan
-version: 2.2.1
+version: 2.3.0
 slug: addman
 description: Declaratively install, configure and remove add-ons from a git-managed YAML file.
 url: https://github.com/dadav/hass-addon-addman/tree/main/addman
 init: false
 hassio_api: true
 hassio_role: manager
+homeassistant_api: true
 map:
   - config:rw
 arch:
@@ -24,5 +25,7 @@ schema:
   config_file: str
   dry_run: bool?
   log_level: list(trace|debug|info|notice|warning|error|fatal)
+  notify_persistent: bool?
+  notify_service: str?
   watch_config_changes: bool
 image: ghcr.io/dadav/addon-addman

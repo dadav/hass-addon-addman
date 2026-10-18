@@ -37,6 +37,8 @@ declarative `addman.yaml` file:
 - **Removes** add-ons you mark with `state: absent`.
 - **Validates** every option against the add-on's own schema _before_ applying,
   so a typo can't break an add-on.
+- **Notifies** you when reconciling fails, via a Home Assistant persistent
+  notification and optionally a push through any `notify.*` service.
 
 Point AddMan's config directory at a git repo (e.g. with the
 [git-pull](https://github.com/home-assistant/addons/tree/master/git_pull)

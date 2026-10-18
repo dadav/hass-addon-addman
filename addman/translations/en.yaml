@@ -19,6 +19,17 @@ configuration:
   log_level:
     name: Log level
     description: The amount of logging the add-on should do.
+  notify_persistent:
+    name: Persistent notification on errors
+    description: |
+      Create a Home Assistant persistent notification when AddMan fails to
+      reconcile an add-on (default: true). It is dismissed once the error
+      is resolved.
+  notify_service:
+    name: Notify service
+    description: |
+      Optional notify service (e.g. notify.mobile_app_my_phone) that receives
+      a push message when an error occurs and when it is resolved.
   watch_config_changes:
     name: Watch config changes
     description: Read the config (config_file) on every iteration.

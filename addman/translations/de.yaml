@@ -19,6 +19,17 @@ configuration:
   log_level:
     name: Log level
     description: Die Anzahl der Logs die von dem Addon generiert werden.
+  notify_persistent:
+    name: Dauerhafte Benachrichtigung bei Fehlern
+    description: |
+      Erstelle eine dauerhafte Home Assistant Benachrichtigung, wenn AddMan
+      ein Add-on nicht abgleichen kann (Standard: true). Sie wird entfernt,
+      sobald der Fehler behoben ist.
+  notify_service:
+    name: Benachrichtigungsdienst
+    description: |
+      Optionaler notify Dienst (z.B. notify.mobile_app_mein_handy), der eine
+      Push-Nachricht erhält, wenn ein Fehler auftritt und wenn er behoben ist.
   watch_config_changes:
     name: Add-on Konfig beobachten
     description: Lese die Konfigurationsdatei vor jeder Iteration neu ein.

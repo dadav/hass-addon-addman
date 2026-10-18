@@ -4,6 +4,9 @@
 # ==============================================================================
 if [[ "${1}" -ne 0 ]] && [[ "${1}" -ne 256 ]]; then
   bashio::log.warning "addman.sh crashed, halting add-on"
+  addman-notify error crash "AddMan: stopped" \
+    "addman.sh exited with code ${1} and the AddMan add-on was halted. Add-ons are no longer reconciled. Check the AddMan log for details." \
+    || true
   /run/s6/basedir/bin/halt
 fi
 
