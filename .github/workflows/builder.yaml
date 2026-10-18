@@ -50,7 +50,7 @@ jobs:
 
       - name: Find add-on directories
         id: addons
-        uses: home-assistant/actions/helpers/find-addons@868e6cb4607727d764341a158d98872cd63fa658  # master
+        uses: home-assistant/actions/helpers/find-addons@cd6f3635a740c84d8a14f6121a90068b8ece6bf6  # master
 
       - name: Filter changed add-ons
         id: filter
